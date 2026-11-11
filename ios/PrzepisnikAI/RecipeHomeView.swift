@@ -16,12 +16,12 @@ struct RecipeHomeView: View {
     private let groupID = "group.com.fargan95.przepisnikai"
 
     private var categories: [String] {
-        ["Wszystkie"] + Array(Set(savedRecipes.map { $0.category }.filter { !$0.isEmpty })).sorted()
+        ["Wszystkie", "Ulubione"] + Array(Set(savedRecipes.map { $0.category }.filter { !$0.isEmpty })).sorted()
     }
 
     private var filteredRecipes: [RecipeImportResponse] {
         savedRecipes.filter { recipe in
-            let matchesCategory = selectedCategory == "Wszystkie" || recipe.category == selectedCategory
+            let matchesCategory = selectedCategory == "Wszystkie" || (selectedCategory == "Ulubione" ? recipe.isFavorite : recipe.category == selectedCategory)
             let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
             let matchesSearch = query.isEmpty ||
                 recipe.name.localizedCaseInsensitiveContains(query) ||
