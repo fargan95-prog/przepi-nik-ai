@@ -56,7 +56,7 @@ struct RecipeHomeView: View {
 }
 
 struct RecipeImportResponse: Codable {
-    struct Ingredient: Decodable, Identifiable {
+    struct Ingredient: Codable, Identifiable {
         var name: String; var amount: String?; var unit: String?; var note: String
         var id: String { name + (amount ?? "") }
     }
@@ -97,17 +97,31 @@ struct ShareImportView: View {
                 }
                 if let savedMessage { Section { Label(savedMessage, systemImage: "checkmark.circle.fill").foregroundStyle(.green) } }
                 if let recipe {
-                    Section(recipe.name) {
-                        Text(recipe.description)
-                        LabeledContent("Kategoria", value: recipe.category)
-                        if let servings = recipe.servings { LabeledContent("Porcje", value: String(servings)) }
-                        ForEach(recipe.ingredients) { ingredient in
-                            Text([ingredient.name, ingredient.amount ?? "nie podano", ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                    if !recipe.isRecipe {
+                        Section("Potrzebujemy jeszcze materiału") {
+                            Label("Otrzymaliśmy link, ale nie zawartość rolki.", systemImage: "link").foregroundStyle(.orange)
+                            Text("Instagram nie przekazał filmu ani opisu przepisu. Nie będziemy zgadywać składników.")
+                            if let source = recipe.sourceURL, let url = URL(string: source) {
+                                Link("Otwórz oryginalny post na Instagramie", destination: url)
+                            }
+                            Text("Udostępnij ponownie zrzuty ekranu z listą składników i przygotowaniem albo wklej opis posta w polu notatki.")
                         }
-                        ForEach(Array(recipe.steps.enumerated()), id: \\.offset) { index, step in Text("\\(index + 1). \\(step)") }
-                        if recipe.needsReview {
-                            Label("Wymaga sprawdzenia", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                            ForEach(recipe.uncertainties, id: \\.self) { Text($0) }
+                    } else {
+                        Section(recipe.name) {
+                            Text(recipe.description)
+                            LabeledContent("Kategoria", value: recipe.category)
+                            if let servings = recipe.servings { LabeledContent("Porcje", value: String(servings)) }
+                            ForEach(recipe.ingredients) { ingredient in
+                                Text([ingredient.name, ingredient.amount ?? "nie podano", ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                            }
+                            ForEach(Array(recipe.steps.enumerated()), id: \\.offset) { index, step in Text("\\(index + 1). \\(step)") }
+                            if recipe.needsReview {
+                                Label("Wymaga sprawdzenia", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                                ForEach(recipe.uncertainties, id: \\.self) { Text($0) }
+                            }
+                            if let source = recipe.sourceURL, let url = URL(string: source) {
+                                Link("Oryginalne źródło", destination: url)
+                            }
                         }
                     }
                 }
