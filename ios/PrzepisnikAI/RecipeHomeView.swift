@@ -454,14 +454,14 @@ struct ShareImportView: View {
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         var body = Data()
         func field(_ name: String, _ value: String) {
-            body.append(Data("--\(boundary)\\r\\nContent-Disposition: form-data; name=\\"\(name)\\"\\r\\n\\r\\n\(value)\\r\\n".utf8))
+            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
         }
         let sourceURL = items.first(where: { value in
             guard let url = URL(string: value), let host = url.host?.lowercased() else { return false }
             return host == "instagram.com" || host.hasSuffix(".instagram.com")
         })
         let nonURLText = items.filter { $0 != sourceURL && !$0.hasPrefix("shared-") }
-        field("text", (nonURLText.joined(separator: "\\n") + "\\n" + note).trimmingCharacters(in: .whitespacesAndNewlines))
+        field("text", (nonURLText.joined(separator: "\n") + "\n" + note).trimmingCharacters(in: .whitespacesAndNewlines))
         if let sourceURL { field("sourceURL", sourceURL) }
         if let inbox = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)?.appendingPathComponent("ShareInbox") {
             let files = (try? FileManager.default.contentsOfDirectory(at: inbox, includingPropertiesForKeys: nil)) ?? []
@@ -482,11 +482,11 @@ struct ShareImportView: View {
                     mime = "audio/mp4"
                     try? FileManager.default.removeItem(at: audioURL)
                 }
-                body.append(Data("--\(boundary)\\r\\nContent-Disposition: form-data; name=\\"files\\"; filename=\\"\(uploadName)\\"\\r\\nContent-Type: \(mime)\\r\\n\\r\\n".utf8))
-                body.append(uploadData); body.append(Data("\\r\\n".utf8))
+                body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"files\"; filename=\"\(uploadName)\"\r\nContent-Type: \(mime)\r\n\r\n".utf8))
+                body.append(uploadData); body.append(Data("\r\n".utf8))
             }
         }
-        body.append(Data("--\(boundary)--\\r\\n".utf8)); request.httpBody = body
+        body.append(Data("--\(boundary)--\r\n".utf8)); request.httpBody = body
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
