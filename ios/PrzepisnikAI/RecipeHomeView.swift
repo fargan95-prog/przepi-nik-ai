@@ -74,6 +74,7 @@ struct ShareImportView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var recipe: RecipeImportResponse?
+    @State private var savedMessage: String?
     private let groupID = "group.com.fargan95.przepisnikai"
     private let endpoint = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String ?? ""
 
@@ -93,6 +94,7 @@ struct ShareImportView: View {
                     if endpoint.isEmpty { Text("Backend nie jest jeszcze podłączony.").foregroundStyle(.secondary) }
                     if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
                 }
+                if let savedMessage { Section { Label(savedMessage, systemImage: "checkmark.circle.fill").foregroundStyle(.green) } }
                 if let recipe {
                     Section(recipe.name) {
                         Text(recipe.description)
@@ -146,6 +148,14 @@ struct ShareImportView: View {
             let result = try JSONDecoder().decode(ImportEnvelope.self, from: data)
             guard result.ok, let parsed = result.recipe else { throw NSError(domain: "Import", code: 2, userInfo: [NSLocalizedDescriptionKey: "Materiał nie zawiera rozpoznawalnego przepisu."]) }
             recipe = parsed
+            let encoder = JSONEncoder()
+            if let data = try? encoder.encode(parsed) {
+                let defaults = UserDefaults(suiteName: groupID)
+                var saved = defaults?.array(forKey: "savedRecipes") as? [Data] ?? []
+                saved.insert(data, at: 0)
+                defaults?.set(Array(saved.prefix(500)), forKey: "savedRecipes")
+                savedMessage = "Przepis zapisany w bibliotece na tym urządzeniu."
+            }
         } catch { errorMessage = error.localizedDescription }
     }
 }
