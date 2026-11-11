@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RecipeHomeView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var sharedItems: [String] = []
     @State private var savedRecipes: [RecipeImportResponse] = []
     @State private var searchText = ""
@@ -111,7 +112,14 @@ struct RecipeHomeView: View {
             .searchable(text: $searchText, prompt: "Szukaj przepisu lub składnika")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { loadShare(); showImport = true } label: {
+                    Menu {
+                        Button { loadShare(); showImport = true } label: {
+                            Label("Importuj z udostępnienia", systemImage: "square.and.arrow.down")
+                        }
+                        Button(action: addBlankRecipe) {
+                            Label("Dodaj ręcznie", systemImage: "square.and.pencil")
+                        }
+                    } label: {
                         Image(systemName: "plus.circle.fill").font(.title2).foregroundStyle(green)
                     }
                 }
@@ -125,6 +133,12 @@ struct RecipeHomeView: View {
             .onAppear {
                 loadShare()
                 loadSaved()
+            }
+            .onChange(of: scenePhase) { phase in
+                if phase == .active {
+                    loadShare()
+                    loadSaved()
+                }
             }
         }
     }
@@ -142,6 +156,12 @@ struct RecipeHomeView: View {
         let defaults = UserDefaults(suiteName: groupID)
         let stored = defaults?.array(forKey: "savedRecipes") as? [Data] ?? []
         savedRecipes = stored.compactMap { try? JSONDecoder().decode(RecipeImportResponse.self, from: $0) }
+    }
+
+    private func addBlankRecipe() {
+        let recipe = RecipeImportResponse(name: "Nowy przepis")
+        savedRecipes.insert(recipe, at: 0)
+        persistRecipes()
     }
 
     private func deleteRecipes(at offsets: IndexSet) {
@@ -324,7 +344,24 @@ struct RecipeImportResponse: Codable, Identifiable {
     var ingredients: [Ingredient]; var steps: [String]; var tags: [String]
     var needsReview: Bool; var uncertainties: [String]
     var sourceURL: String? = nil
-    var id: String { (sourceURL ?? name) + name }
+    var id: String { (sourceURL ?? "") + name }
+
+    init(name: String = "Nowy przepis") {
+        self.isRecipe = true
+        self.name = name
+        self.description = ""
+        self.category = "Inne"
+        self.subcategory = ""
+        self.servings = nil
+        self.prepMinutes = nil
+        self.cookMinutes = nil
+        self.ingredients = []
+        self.steps = []
+        self.tags = []
+        self.needsReview = true
+        self.uncertainties = ["Uzupełnij składniki i sposób przygotowania."]
+        self.sourceURL = nil
+    }
 }
 struct ImportEnvelope: Decodable { let ok: Bool; let recipe: RecipeImportResponse?; let error: String?; let sourceURL: String? }
 
