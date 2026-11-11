@@ -45,6 +45,8 @@ Import przepisu: `POST /v1/recipes/import` (multipart: `text`, `sourceURL`, `fil
 Instagram może przekazać wyłącznie URL zamiast pliku lub opisu rolki. Sam link nie daje aplikacji dostępu do prywatnej zawartości. W takim przypadku aplikacja zachowuje źródło i prosi o udostępnienie zrzutów ekranu, pliku albo wklejenie opisu. Aplikacja nie obchodzi zabezpieczeń Instagrama ani nie pobiera treści z prywatnych kont.
 
 ## Prywatność i bezpieczeństwo
+- W projekcie znajduje się manifest prywatności `PrzepisnikAI/PrivacyInfo.xcprivacy` deklarujący wymagany powód użycia UserDefaults (CA92.1).
+- Import multimediów ma limity ochronne: maksymalnie 12 MB na plik, 32 MB łącznie i 9 plików na żądanie.
 - Klucz OpenAI pozostaje na backendzie, nie jest umieszczany w aplikacji.
 - Biblioteka przepisów jest przechowywana lokalnie w App Group na urządzeniu.
 - Materiały wysłane do analizy są przekazywane do skonfigurowanego backendu i usługi AI.
