@@ -30,8 +30,16 @@ final class ShareViewController: UIViewController {
         let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)
         guard let container else { finish(error: "Brak dostępu do współdzielonego folderu."); return }
         let inbox = container.appendingPathComponent("ShareInbox", isDirectory: true)
-        do { try FileManager.default.createDirectory(at: inbox, withIntermediateDirectories: true) }
-        catch { finish(error: "Nie można zapisać udostępnionego materiału."); return }
+        do {
+            try FileManager.default.createDirectory(at: inbox, withIntermediateDirectories: true)
+            let previousFiles = try FileManager.default.contentsOfDirectory(at: inbox, includingPropertiesForKeys: nil)
+            for file in previousFiles where file.lastPathComponent == "latest-share.json" || file.lastPathComponent.hasPrefix("shared-") {
+                try? FileManager.default.removeItem(at: file)
+            }
+        } catch {
+            finish(error: "Nie można przygotować folderu udostępniania.")
+            return
+        }
 
         let taskGroup = DispatchGroup()
         let lock = NSLock()
