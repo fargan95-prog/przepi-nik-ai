@@ -5,6 +5,7 @@ import UIKit
 struct RecipeHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var sharedItems: [String] = []
+    @State private var shareErrors: [String] = []
     @State private var savedRecipes: [RecipeImportResponse] = []
     @State private var searchText = ""
     @State private var selectedCategory = "Wszystkie"
@@ -138,7 +139,7 @@ struct RecipeHomeView: View {
                 }
             }
             .sheet(isPresented: $showImport, onDismiss: { loadSaved(); loadShare() }) {
-                ShareImportView(items: sharedItems)
+                ShareImportView(items: sharedItems, shareErrors: shareErrors)
             }
             .onAppear {
                 loadShare()
@@ -160,9 +161,11 @@ struct RecipeHomeView: View {
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let items = json["items"] as? [String] else {
             sharedItems = []
+            shareErrors = []
             return
         }
         sharedItems = items
+        shareErrors = json["errors"] as? [String] ?? []
     }
 
     private func clearShareInbox() {
@@ -465,6 +468,7 @@ struct ImportEnvelope: Decodable { let ok: Bool; let recipe: RecipeImportRespons
 
 struct ShareImportView: View {
     let items: [String]
+    let shareErrors: [String]
     @State private var note = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -477,7 +481,19 @@ struct ShareImportView: View {
         NavigationStack {
             Form {
                 Section("Otrzymany materiał") {
-                    ForEach(Array(items.enumerated()), id: \.offset) { _, item in Text(item).textSelection(.enabled) }
+                    if items.isEmpty {
+                        Text("Nie wykryto udostępnionego tekstu ani linku. Możesz dodać notatkę lub wrócić i udostępnić materiał ponownie.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(Array(items.enumerated()), id: \.offset) { _, item in Text(item).textSelection(.enabled) }
+                    }
+                }
+                if !shareErrors.isEmpty {
+                    Section("Nieprzekazane załączniki") {
+                        ForEach(shareErrors, id: \.self) { error in
+                            Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                        }
+                    }
                 }
                 Section("Analiza AI") {
                     TextField("Dodatkowa notatka (opcjonalnie)", text: $note, axis: .vertical)
