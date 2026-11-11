@@ -13,7 +13,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use(rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: true, legacyHeaders: false }));
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 24 * 1024 * 1024, files: 9, fields: 8 },
+  limits: { fileSize: 12 * 1024 * 1024, files: 9, fields: 8 },
   fileFilter: (_req, file, cb) => {
     const ok = /^(image\/(jpeg|png|webp|heic)|audio\/(mpeg|mp4|wav|x-wav|m4a|aac|webm)|video\/(mp4|quicktime|webm))$/i.test(file.mimetype);
     cb(ok ? null : new Error("Nieobsługiwany format pliku."), ok);
@@ -42,6 +42,10 @@ Nie dopowiadaj brakujących składników, ilości, czasu, temperatur ani kroków
 app.get("/health", (_req, res) => res.json({ ok: true, service: "Przepiśnik AI native backend" }));
 app.post("/v1/recipes/import", upload.array("files", 9), async (req, res) => {
   try {
+    const totalUploadBytes = (req.files || []).reduce((sum, file) => sum + file.size, 0);
+    if (totalUploadBytes > 32 * 1024 * 1024) {
+      return res.status(413).json({ ok: false, error: "Łączny rozmiar załączników przekracza 32 MB. Udostępnij mniej zdjęć lub krótszy materiał." });
+    }
     const ai = client();
     const text = String(req.body.text || "").slice(0, 20_000);
     const sourceURL = String(req.body.sourceURL || "").slice(0, 2_000);
@@ -73,11 +77,17 @@ app.post("/v1/recipes/import", upload.array("files", 9), async (req, res) => {
       text: { format: { type: "json_schema", name: "recipe_import", strict: true, schema: recipeSchema } },
       max_output_tokens: 3500
     });
+    if (!response.output_text) throw new Error("Usługa AI nie zwróciła danych przepisu.");
     const recipe = JSON.parse(response.output_text);
     res.json({ ok: true, recipe, sourceURL });
   } catch (error) {
     const status = error.status && error.status >= 400 && error.status < 600 ? error.status : 500;
-    res.status(status).json({ ok: false, error: status === 401 ? "Błąd autoryzacji usługi AI." : (error.message || "Nie udało się przeanalizować materiału.") });
+    const safeMessage = status === 401 ? "Błąd autoryzacji usługi AI."
+      : status === 413 ? "Załączniki są zbyt duże."
+      : status === 429 ? "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie."
+      : "Nie udało się przeanalizować materiału. Spróbuj ponownie lub udostępnij mniej materiałów.";
+    console.error("Recipe import failed:", status, error.message);
+    res.status(status).json({ ok: false, error: safeMessage });
   }
 });
 app.use((error, _req, res, _next) => res.status(400).json({ ok: false, error: error.message || "Nieprawidłowy materiał." }));
