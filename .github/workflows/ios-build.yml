@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "ios/**"
+      - "native-backend/**"
       - ".github/workflows/ios-build.yml"
   workflow_dispatch:
 
@@ -13,7 +14,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  source-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+      - name: Parse Swift sources
+        run: |
+          swiftc -frontend -parse ios/PrzepisnikAI/PrzepisnikAIApp.swift
+          swiftc -frontend -parse ios/PrzepisnikAI/RecipeHomeView.swift
+          swiftc -frontend -parse ios/PrzepisnikShare/ShareViewController.swift
+      - name: Check backend JavaScript syntax
+        run: node --check native-backend/server.js
+
+  ios-build:
+    needs: source-check
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
