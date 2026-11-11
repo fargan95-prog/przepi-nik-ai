@@ -163,7 +163,7 @@ struct ShareImportView: View {
                 throw NSError(domain: "Import", code: 1, userInfo: [NSLocalizedDescriptionKey: server?.error ?? "Serwer zwrócił błąd."])
             }
             let result = try JSONDecoder().decode(ImportEnvelope.self, from: data)
-            guard result.ok, let parsed = result.recipe else { throw NSError(domain: "Import", code: 2, userInfo: [NSLocalizedDescriptionKey: "Materiał nie zawiera rozpoznawalnego przepisu."]) }
+            guard result.ok, var parsed = result.recipe else { throw NSError(domain: "Import", code: 2, userInfo: [NSLocalizedDescriptionKey: "Materiał nie zawiera rozpoznawalnego przepisu."]) }
             parsed.sourceURL = result.sourceURL ?? sourceURL
             recipe = parsed
             guard parsed.isRecipe else { return }
