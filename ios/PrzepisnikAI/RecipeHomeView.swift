@@ -133,7 +133,7 @@ struct RecipeHomeView: View {
                     EditButton().disabled(savedRecipes.isEmpty)
                 }
             }
-            .sheet(isPresented: $showImport, onDismiss: loadSaved) {
+            .sheet(isPresented: $showImport, onDismiss: { loadSaved(); loadShare() }) {
                 ShareImportView(items: sharedItems)
             }
             .onAppear {
@@ -154,8 +154,20 @@ struct RecipeHomeView: View {
             .appendingPathComponent("ShareInbox/latest-share.json")
         guard let inbox, let data = try? Data(contentsOf: inbox),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let items = json["items"] as? [String] else { return }
+              let items = json["items"] as? [String] else {
+            sharedItems = []
+            return
+        }
         sharedItems = items
+    }
+
+    private func clearShareInbox() {
+        guard let inbox = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)?
+            .appendingPathComponent("ShareInbox", isDirectory: true) else { return }
+        let files = (try? FileManager.default.contentsOfDirectory(at: inbox, includingPropertiesForKeys: nil)) ?? []
+        for file in files where file.lastPathComponent == "latest-share.json" || file.lastPathComponent.hasPrefix("shared-") {
+            try? FileManager.default.removeItem(at: file)
+        }
     }
 
     private func loadSaved() {
@@ -552,6 +564,7 @@ struct ShareImportView: View {
             guard result.ok, var parsed = result.recipe else { throw NSError(domain: "Import", code: 2, userInfo: [NSLocalizedDescriptionKey: "Materiał nie zawiera rozpoznawalnego przepisu."]) }
             parsed.sourceURL = result.sourceURL ?? sourceURL
             recipe = parsed
+            clearShareInbox()
             guard parsed.isRecipe else { return }
             let encoder = JSONEncoder()
             if let data = try? encoder.encode(parsed) {
