@@ -45,6 +45,9 @@ app.post("/v1/recipes/import", upload.array("files", 9), async (req, res) => {
     const ai = client();
     const text = String(req.body.text || "").slice(0, 20_000);
     const sourceURL = String(req.body.sourceURL || "").slice(0, 2_000);
+    if (!text.trim() && !sourceURL.trim() && !(req.files || []).length) {
+      return res.status(400).json({ ok: false, error: "Dodaj opis, zdjęcie, zrzut ekranu lub film z przepisem." });
+    }
     const content = [{ type: "input_text", text: [text && "Tekst materiału:\n"+text, sourceURL && "Adres źródła (sam link nie daje dostępu do prywatnej treści): "+sourceURL].filter(Boolean).join("\n\n") || "Przeanalizuj załączone materiały." }];
     for (const file of req.files || []) {
       if (file.mimetype.startsWith("image/")) {
