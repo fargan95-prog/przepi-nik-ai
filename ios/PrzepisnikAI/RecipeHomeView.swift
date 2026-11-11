@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct RecipeHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -425,6 +426,25 @@ struct ShareImportView: View {
         }
     }
 
+    private func extractAudio(from videoURL: URL) async throws -> URL {
+        let asset = AVURLAsset(url: videoURL)
+        guard !asset.tracks(withMediaType: .audio).isEmpty,
+              let exporter = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
+            throw NSError(domain: "RecipeImport", code: 10, userInfo: [NSLocalizedDescriptionKey: "Wideo nie zawiera ścieżki audio."])
+        }
+        let output = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+        exporter.outputURL = output
+        exporter.outputFileType = .m4a
+        await withCheckedContinuation { continuation in
+            exporter.exportAsynchronously { continuation.resume() }
+        }
+        guard exporter.status == .completed else {
+            try? FileManager.default.removeItem(at: output)
+            throw exporter.error ?? NSError(domain: "RecipeImport", code: 11, userInfo: [NSLocalizedDescriptionKey: "Nie udało się wyodrębnić dźwięku z filmu."])
+        }
+        return output
+    }
+
     @MainActor private func importRecipe() async {
         guard let base = URL(string: endpoint), let url = URL(string: "/v1/recipes/import", relativeTo: base) else { errorMessage = "Nieprawidłowy adres backendu."; return }
         isLoading = true; errorMessage = nil
@@ -447,14 +467,23 @@ struct ShareImportView: View {
             let files = (try? FileManager.default.contentsOfDirectory(at: inbox, includingPropertiesForKeys: nil)) ?? []
             for file in files where file.lastPathComponent.hasPrefix("shared-") {
                 guard let data = try? Data(contentsOf: file), data.count <= 24 * 1024 * 1024 else { continue }
-                let mime = file.pathExtension.lowercased() == "jpg" || file.pathExtension.lowercased() == "jpeg" ? "image/jpeg" :
+                var uploadData = data
+                var uploadName = file.lastPathComponent
+                var mime = file.pathExtension.lowercased() == "jpg" || file.pathExtension.lowercased() == "jpeg" ? "image/jpeg" :
                     file.pathExtension.lowercased() == "png" ? "image/png" :
                     ["heic", "heif"].contains(file.pathExtension.lowercased()) ? "image/heic" :
                     file.pathExtension.lowercased() == "webp" ? "image/webp" :
                     file.pathExtension.lowercased() == "mp4" ? "video/mp4" :
                     file.pathExtension.lowercased() == "mov" ? "video/quicktime" : "application/octet-stream"
-                body.append(Data("--\(boundary)\\r\\nContent-Disposition: form-data; name=\\"files\\"; filename=\\"\(file.lastPathComponent)\\"\\r\\nContent-Type: \(mime)\\r\\n\\r\\n".utf8))
-                body.append(data); body.append(Data("\\r\\n".utf8))
+                if mime.hasPrefix("video/"), let audioURL = try? await extractAudio(from: file),
+                   let audioData = try? Data(contentsOf: audioURL) {
+                    uploadData = audioData
+                    uploadName = file.deletingPathExtension().lastPathComponent + ".m4a"
+                    mime = "audio/mp4"
+                    try? FileManager.default.removeItem(at: audioURL)
+                }
+                body.append(Data("--\(boundary)\\r\\nContent-Disposition: form-data; name=\\"files\\"; filename=\\"\(uploadName)\\"\\r\\nContent-Type: \(mime)\\r\\n\\r\\n".utf8))
+                body.append(uploadData); body.append(Data("\\r\\n".utf8))
             }
         }
         body.append(Data("--\(boundary)--\\r\\n".utf8)); request.httpBody = body
