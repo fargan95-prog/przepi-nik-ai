@@ -225,6 +225,7 @@ struct RecipeHomeView: View {
 
 struct RecipeDetailView: View {
     @State private var recipe: RecipeImportResponse
+    @State private var displayServings: Int
     @State private var showEditor = false
     let onSave: (RecipeImportResponse, UUID) -> Void
     @State private var originalID: UUID
@@ -232,6 +233,7 @@ struct RecipeDetailView: View {
 
     init(recipe: RecipeImportResponse, onSave: @escaping (RecipeImportResponse, UUID) -> Void) {
         _recipe = State(initialValue: recipe)
+        _displayServings = State(initialValue: max(1, recipe.servings ?? 1))
         _originalID = State(initialValue: recipe.id)
         self.onSave = onSave
     }
@@ -250,6 +252,20 @@ struct RecipeDetailView: View {
         return lines.filter { !$0.isEmpty }.joined(separator: "\n")
     }
 
+    private func scaledAmount(_ amount: String?) -> String {
+        guard let amount, let baseServings = recipe.servings, baseServings > 0,
+              let quantity = Double(amount.replacingOccurrences(of: ",", with: ".")),
+              quantity > 0 else {
+            return amount ?? "Ilość niepodana"
+        }
+        let scaled = quantity * Double(displayServings) / Double(baseServings)
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "pl_PL")
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: scaled)) ?? amount
+    }
+
     var body: some View {
         List {
             Section {
@@ -260,6 +276,9 @@ struct RecipeDetailView: View {
                 if let cook = recipe.cookMinutes { LabeledContent("Gotowanie", value: "\(cook) min") }
             }
             Section("Składniki") {
+                if recipe.servings != nil {
+                    Stepper("Porcje: \(displayServings)", value: $displayServings, in: 1...30)
+                }
                 ForEach(recipe.ingredients) { ingredient in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(ingredient.name).font(.body)
