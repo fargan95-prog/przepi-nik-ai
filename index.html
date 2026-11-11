@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101114"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Przepiśnik AI"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><title>Przepiśnik AI</title><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar"><div><div class="eyebrow">TWOJA KUCHENNA BIBLIOTEKA</div><h1>Przepiśnik<span> AI</span></h1></div><button class="icon-btn" id="settingsBtn" aria-label="Ustawienia">⚙</button></header>
+<main>
+<section id="homeView" class="view active">
+  <div class="hero"><div><div class="eyebrow">WSZYSTKO, CO LUBISZ GOTOWAĆ</div><h2>Co dziś<br>przygotujemy?</h2><p id="recipeCount">Twoje przepisy w jednym miejscu.</p></div><div class="hero-art">✦</div></div>
+  <div class="search-wrap"><span>⌕</span><input id="searchInput" placeholder="Szukaj przepisu lub składnika…"></div>
+  <div class="section-head"><h3>Kategorie</h3><button class="text-btn" id="manageCatsBtn">Edytuj</button></div><div id="categoryChips" class="chips"></div>
+  <div class="section-head"><h3 id="listHeading">Ostatnio dodane</h3><button class="text-btn" id="allRecipesBtn">Wszystkie</button></div><div id="recipeGrid" class="recipe-grid"></div>
+  <div id="emptyState" class="empty-state hidden"><div class="empty-icon">♨</div><h3>Twoja książka kucharska czeka</h3><p>Dodaj pierwszy przepis z Instagrama albo wpisz go ręcznie.</p><button class="primary-btn" id="emptyAddBtn">＋ Dodaj przepis</button></div>
+</section>
+<section id="savedView" class="view"><div class="page-heading"><div class="eyebrow">TWOJA KOLEKCJA</div><h2>Ulubione</h2></div><div id="favoritesGrid" class="recipe-grid"></div></section>
+<section id="shoppingView" class="view"><div class="page-heading"><div class="eyebrow">PRZED WYPRAWĄ DO SKLEPU</div><h2>Lista zakupów</h2><p class="muted">Zbieraj składniki z wybranych przepisów.</p></div><div id="shoppingList" class="shopping-list"></div><button class="secondary-btn" id="clearShopping">Wyczyść listę</button></section>
+<section id="addView" class="view"><div class="page-heading"><div class="eyebrow">NOWY WPIS</div><h2>Dodaj przepis</h2><p class="muted">Zapisz link, wklej opis lub uzupełnij własny przepis.</p></div>
+ <div class="import-card"><div class="import-icon">✦</div><div class="import-copy"><b>Importuj z Instagrama</b><span>Wklej link lub opis rolki. AI może uporządkować treść.</span></div></div>
+ <label class="field-label" for="importUrl">Link do posta / rolki</label><input id="importUrl" class="field" type="url" placeholder="https://www.instagram.com/reel/…">
+ <label class="field-label" for="importText">Opis / napisy / transkrypcja z rolki</label><textarea id="importText" class="field textarea" rows="5" placeholder="Wklej opis posta lub tekst widoczny w rolce. Jeśli Instagram nie udostępni treści przez link, wklej ją tutaj…"></textarea>
+ <label class="field-label">Dodaj zrzuty ekranu / zdjęcia przepisu</label><label class="upload-box" for="recipeImage"><span>＋</span><b>Wybierz kilka zdjęć lub zrzutów</b><small>Możesz zaznaczyć kilka obrazów z rolki (JPG, PNG, WebP)</small></label><input id="recipeImage" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden>
+ <label class="field-label">Dodaj zapisane wideo / audio z rolki</label><label class="upload-box" for="recipeVideo"><span>▶</span><b>Wybierz plik wideo lub audio</b><small>MP4, WebM, M4A, MP3 lub WAV · maks. 24 MB. Dla iPhone najlepiej MP4/M4A.</small></label><input id="recipeVideo" type="file" accept="video/mp4,video/webm,audio/mp4,audio/m4a,audio/mpeg,audio/wav" hidden>
+ <button class="primary-btn full" id="analyzeBtn">✦ Agent AI – utwórz cały przepis</button><p class="hint" id="aiHint">Agent przygotuje nazwę, opis, składniki, ilości, kroki, czas, porcje, kategorię i tagi. Możesz dodać zapisane wideo, aby agent przepisał wypowiedź autora; link sam w sobie nie daje dostępu do rolki.</p>
+ <div class="divider-label">LUB WPISZ RĘCZNIE</div>
+ <form id="recipeForm"><input type="hidden" id="recipeId"><label class="field-label">Nazwa przepisu *</label><input class="field" id="recipeName" required placeholder="np. Makaron w kremowym sosie">
+ <div class="two-col"><div><label class="field-label">Kategoria</label><select class="field" id="recipeCategory"></select></div><div><label class="field-label">Podkategoria</label><input class="field" id="recipeSubcategory" placeholder="np. makarony"></div></div>
+ <div class="two-col"><div><label class="field-label">Porcje</label><input class="field" id="recipeServings" type="number" min="1" value="2"></div><div><label class="field-label">Czas (min)</label><input class="field" id="recipeTime" type="number" min="0" placeholder="30"></div></div>
+ <label class="field-label">Opis przepisu</label><textarea class="field textarea" id="recipeDescription" rows="3" placeholder="Krótki opis dania…"></textarea>
+ <label class="field-label">Składniki</label><div id="ingredientEditor"></div><button type="button" class="add-line-btn" id="addIngredient">＋ Dodaj składnik</button>
+ <label class="field-label">Sposób przygotowania</label><textarea class="field textarea" id="recipeSteps" rows="5" placeholder="Opisz kolejne kroki…"></textarea>
+ <label class="field-label">Tagi</label><input class="field" id="recipeTags" placeholder="np. fit, wysokobiałkowe, szybkie">
+ <label class="field-label">Notatki</label><textarea class="field textarea" id="recipeNotes" rows="2" placeholder="Twoje modyfikacje, zamienniki…"></textarea>
+ <div class="form-actions"><button type="button" class="secondary-btn" id="cancelEdit">Wyczyść</button><button class="primary-btn" type="submit">Zapisz przepis</button></div></form>
+</section>
+<section id="settingsView" class="view"><div class="page-heading"><div class="eyebrow">PERSONALIZACJA</div><h2>Ustawienia</h2></div><div class="settings-card"><h3>Agent AI – automatyczne przepisy</h3><p class="muted">Agent AI przygotowuje kompletną kartę przepisu. Klucz OpenAI jest przechowywany wyłącznie po stronie serwera, nigdy w aplikacji.</p><label class="field-label">Adres endpointu agenta</label><input class="field" id="aiEndpoint" placeholder="https://twoj-worker.workers.dev/api/recipe-parse"><label class="field-label">Hasło dostępu do agenta</label><input class="field" id="aiAccessToken" type="password" autocomplete="off" placeholder="To samo hasło ustawisz w Cloudflare"><button class="primary-btn full" id="saveSettings">Zapisz ustawienia</button><p class="hint">Klucz OpenAI pozostaje na serwerze. Hasło dostępu ogranicza przypadkowe użycie endpointu, ale nie zastępuje pełnego logowania. Agent przyjmuje tekst, link, kilka zdjęć i plik audio/wideo.</p></div><div class="settings-card"><h3>Dane i prywatność</h3><p class="muted">Przepisy są przechowywane lokalnie w pamięci tego urządzenia. Nie synchronizują się automatycznie z iPhonem lub iPadem.</p><button class="secondary-btn full" id="exportData">Eksportuj kopię przepisów (JSON)</button><label class="secondary-btn full import-backup" for="backupFile">Importuj kopię zapasową</label><input id="backupFile" type="file" accept="application/json" hidden><button class="danger-btn full" id="deleteAll">Usuń wszystkie dane</button></div><div class="version-note">PRZEPIŚNIK AI · WERSJA 1.0</div></section>
+<section id="detailView" class="view"><button class="back-btn" id="detailBack">← Wróć</button><div id="recipeDetail"></div></section>
+<section id="categoriesView" class="view"><button class="back-btn" id="catsBack">← Wróć</button><div class="page-heading"><div class="eyebrow">ORGANIZACJA</div><h2>Kategorie</h2></div><div id="categoryManager"></div><div class="add-category"><input class="field" id="newCategory" placeholder="Nowa kategoria"><button class="primary-btn" id="addCategory">Dodaj</button></div></section>
+</main>
+<nav class="tabbar"><button class="tab active" data-view="homeView"><span>⌂</span>Start</button><button class="tab" data-view="savedView"><span>♡</span>Ulubione</button><button class="tab add-tab" data-view="addView"><span>＋</span></button><button class="tab" data-view="shoppingView"><span>☷</span>Zakupy</button><button class="tab" data-view="settingsView"><span>⚙</span>Więcej</button></nav>
+</div>
+<div id="toast" class="toast"></div><script src="app.js"></script>
+</body></html>

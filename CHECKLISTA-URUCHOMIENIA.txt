@@ -1,0 +1,11 @@
+PRZEPIŚNIK AI — CHECKLISTA
+
+[ ] 1. Opublikuj folder PWA na Netlify Drop i skopiuj adres strony.
+[ ] 2. Utwórz klucz API na platform.openai.com/api-keys (nie wysyłaj go nikomu).
+[ ] 3. Utwórz Cloudflare Worker i wklej worker.js.
+[ ] 4. Dodaj sekrety OPENAI_API_KEY i APP_ACCESS_TOKEN.
+[ ] 5. Dodaj zmienne OPENAI_MODEL=gpt-4.1-mini i ALLOWED_ORIGIN=adres-Netlify.
+[ ] 6. W aplikacji wpisz endpoint Worker i APP_ACCESS_TOKEN.
+[ ] 7. Przetestuj przepis z tekstu i kilku zrzutów ekranu.
+
+Wygeneruj własne losowe APP_ACCESS_TOKEN (co najmniej 32 znaki). Nie publikuj go w repozytorium.
