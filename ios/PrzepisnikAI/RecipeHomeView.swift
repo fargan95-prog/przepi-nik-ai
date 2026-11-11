@@ -201,6 +201,20 @@ struct RecipeDetailView: View {
         self.onSave = onSave
     }
 
+    private var shareText: String {
+        var lines = [recipe.name, recipe.description, "Składniki:"]
+        lines += recipe.ingredients.map { ingredient in
+            "- \(ingredient.name): \([ingredient.amount, ingredient.unit].compactMap { $0 }.joined(separator: " "))"
+        }
+        lines.append("Przygotowanie:")
+        lines += recipe.steps.enumerated().map { "\($0.offset + 1). \($0.element)" }
+        if let servings = recipe.servings { lines.append("Porcje: \(servings)") }
+        if let prep = recipe.prepMinutes { lines.append("Przygotowanie: \(prep) min") }
+        if let cook = recipe.cookMinutes { lines.append("Gotowanie: \(cook) min") }
+        if let source = recipe.sourceURL { lines.append("Źródło: \(source)") }
+        return lines.filter { !$0.isEmpty }.joined(separator: "\n")
+    }
+
     var body: some View {
         List {
             Section {
@@ -246,6 +260,11 @@ struct RecipeDetailView: View {
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                ShareLink(item: shareText) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Edytuj") { showEditor = true }
             }
