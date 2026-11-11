@@ -306,7 +306,7 @@ struct RecipeEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Anuluj") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Zapisz") { onSave(recipe, originalID); dismiss() }
+                    Button("Zapisz") { onSave(recipe); dismiss() }
                 }
             }
         }
