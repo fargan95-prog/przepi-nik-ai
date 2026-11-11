@@ -150,8 +150,8 @@ struct RecipeHomeView: View {
         persistRecipes()
     }
 
-    private func updateRecipe(_ updated: RecipeImportResponse) {
-        if let index = savedRecipes.firstIndex(where: { $0.id == updated.id }) {
+    private func updateRecipe(_ updated: RecipeImportResponse, originalID: String) {
+        if let index = savedRecipes.firstIndex(where: { $0.id == originalID }) {
             savedRecipes[index] = updated
             persistRecipes()
         }
@@ -166,11 +166,13 @@ struct RecipeHomeView: View {
 struct RecipeDetailView: View {
     @State private var recipe: RecipeImportResponse
     @State private var showEditor = false
-    let onSave: (RecipeImportResponse) -> Void
+    let onSave: (RecipeImportResponse, String) -> Void
+    private let originalID: String
     private let green = Color(red: 0.19, green: 0.29, blue: 0.23)
 
-    init(recipe: RecipeImportResponse, onSave: @escaping (RecipeImportResponse) -> Void) {
+    init(recipe: RecipeImportResponse, onSave: @escaping (RecipeImportResponse, String) -> Void) {
         _recipe = State(initialValue: recipe)
+        self.originalID = recipe.id
         self.onSave = onSave
     }
 
@@ -304,7 +306,7 @@ struct RecipeEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Anuluj") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Zapisz") { onSave(recipe); dismiss() }
+                    Button("Zapisz") { onSave(recipe, originalID); dismiss() }
                 }
             }
         }
