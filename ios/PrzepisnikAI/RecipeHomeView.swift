@@ -2,56 +2,207 @@ import SwiftUI
 
 struct RecipeHomeView: View {
     @State private var sharedItems: [String] = []
+    @State private var savedRecipes: [RecipeImportResponse] = []
+    @State private var searchText = ""
+    @State private var selectedCategory = "Wszystkie"
     @State private var showImport = false
     private let green = Color(red: 0.19, green: 0.29, blue: 0.23)
     private let groupID = "group.com.fargan95.przepisnikai"
 
+    private var categories: [String] {
+        ["Wszystkie"] + Array(Set(savedRecipes.map { $0.category }.filter { !$0.isEmpty })).sorted()
+    }
+
+    private var filteredRecipes: [RecipeImportResponse] {
+        savedRecipes.filter { recipe in
+            let matchesCategory = selectedCategory == "Wszystkie" || recipe.category == selectedCategory
+            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let matchesSearch = query.isEmpty || recipe.name.localizedCaseInsensitiveContains(query) ||
+                recipe.ingredients.contains { $0.name.localizedCaseInsensitiveContains(query) } ||
+                recipe.tags.contains { $0.localizedCaseInsensitiveContains(query) }
+            return matchesCategory && matchesSearch
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color(red: 0.97, green: 0.96, blue: 0.93).ignoresSafeArea()
-                VStack(alignment: .leading, spacing: 22) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("PRYWATNA KSIĄŻKA KUCHARSKA").font(.caption2.weight(.bold)).tracking(2).foregroundStyle(.secondary)
-                        Text("Przepiśnik").font(.system(size: 36, weight: .bold, design: .serif)).foregroundStyle(green)
-                        Text("Twoje przepisy, zebrane w jednym miejscu.").foregroundStyle(.secondary)
-                    }
-                    Button { loadShare(); showImport = true } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: "square.and.arrow.down").font(.title2)
-                            VStack(alignment: .leading) {
-                                Text("Importuj z Instagrama").font(.headline)
-                                Text("Udostępnij rolkę lub post do Przepiśnika").font(.caption)
-                            }
-                            Spacer()
-                            Image(systemName: "arrow.right")
-                        }.foregroundStyle(.white).padding(18).background(green, in: RoundedRectangle(cornerRadius: 20))
-                    }
+            List {
+                Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Ostatnio udostępnione").font(.title3.bold())
-                        if sharedItems.isEmpty {
-                            ContentUnavailableView("Brak materiałów", systemImage: "square.and.arrow.up", description: Text("W Instagramie wybierz Udostępnij, a następnie Przepiśnik AI."))
-                        } else {
-                            ForEach(Array(sharedItems.enumerated()), id: \.offset) { _, item in
-                                Text(item).font(.subheadline).lineLimit(3).padding(12).frame(maxWidth: .infinity, alignment: .leading).background(.white, in: RoundedRectangle(cornerRadius: 12))
+                        Text("PRYWATNA KSIĄŻKA KUCHARSKA")
+                            .font(.caption2.weight(.bold)).tracking(2).foregroundStyle(.secondary)
+                        Text("Przepiśnik")
+                            .font(.system(size: 36, weight: .bold, design: .serif)).foregroundStyle(green)
+                        Text("Twoje przepisy, zebrane w jednym miejscu.")
+                            .foregroundStyle(.secondary)
+                        Button { loadShare(); showImport = true } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "square.and.arrow.down").font(.title2)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Importuj z Instagrama").font(.headline)
+                                    Text("Udostępnij rolkę, post lub zdjęcie").font(.caption)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.right")
+                            }
+                            .foregroundStyle(.white).padding(16)
+                            .background(green, in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 8)
+                    }
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color(red: 0.97, green: 0.96, blue: 0.93))
+                }
+
+                Section {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(categories, id: \.self) { category in
+                                Button { selectedCategory = category } label: {
+                                    Text(category)
+                                        .font(.caption.weight(.semibold))
+                                        .padding(.horizontal, 13).padding(.vertical, 8)
+                                        .background(selectedCategory == category ? green : Color(.secondarySystemBackground),
+                                                    in: Capsule())
+                                        .foregroundStyle(selectedCategory == category ? .white : .primary)
+                                }.buttonStyle(.plain)
+                            }
+                        }.padding(.vertical, 4)
+                    }
+                    if filteredRecipes.isEmpty {
+                        ContentUnavailableView(
+                            searchText.isEmpty ? "Biblioteka jest pusta" : "Brak wyników",
+                            systemImage: searchText.isEmpty ? "book.closed" : "magnifyingglass",
+                            description: Text(searchText.isEmpty
+                                ? "Zaimportuj pierwszy przepis z Instagrama lub dodaj go przez udostępnienie zdjęcia."
+                                : "Zmień wyszukiwaną frazę lub kategorię.")
+                        )
+                        .listRowBackground(Color.clear)
+                    } else {
+                        ForEach(filteredRecipes) { recipe in
+                            NavigationLink {
+                                RecipeDetailView(recipe: recipe)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(recipe.name).font(.headline).foregroundStyle(.primary)
+                                    Text([recipe.category, recipe.servings.map { "\($0) por." }, recipe.prepMinutes.map { "\($0) min" }]
+                                        .compactMap { $0 }.joined(separator: " · "))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                    if recipe.needsReview {
+                                        Label("Do sprawdzenia", systemImage: "exclamationmark.triangle.fill")
+                                            .font(.caption2).foregroundStyle(.orange)
+                                    }
+                                }.padding(.vertical, 4)
                             }
                         }
+                        .onDelete(perform: deleteRecipes)
                     }
-                    Spacer()
-                }.padding(22)
+                } header: {
+                    HStack {
+                        Text("Moja biblioteka")
+                        Spacer()
+                        Text("\(filteredRecipes.count) przepisów").textCase(nil)
+                    }
+                }
             }
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button { loadShare(); showImport = true } label: { Image(systemName: "plus.circle.fill").font(.title2).foregroundStyle(green) } } }
-            .sheet(isPresented: $showImport) { ShareImportView(items: sharedItems) }
-            .onAppear(perform: loadShare)
+            .scrollContentBackground(.hidden)
+            .background(Color(red: 0.97, green: 0.96, blue: 0.93))
+            .searchable(text: $searchText, prompt: "Szukaj przepisu lub składnika")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { loadShare(); showImport = true } label: {
+                        Image(systemName: "plus.circle.fill").font(.title2).foregroundStyle(green)
+                    }
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    EditButton().disabled(savedRecipes.isEmpty)
+                }
+            }
+            .sheet(isPresented: $showImport, onDismiss: loadSaved) {
+                ShareImportView(items: sharedItems)
+            }
+            .onAppear {
+                loadShare()
+                loadSaved()
+            }
         }
     }
 
     private func loadShare() {
-        let inbox = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)?.appendingPathComponent("ShareInbox/latest-share.json")
+        let inbox = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)?
+            .appendingPathComponent("ShareInbox/latest-share.json")
         guard let inbox, let data = try? Data(contentsOf: inbox),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let items = json["items"] as? [String] else { return }
         sharedItems = items
+    }
+
+    private func loadSaved() {
+        let defaults = UserDefaults(suiteName: groupID)
+        let stored = defaults?.array(forKey: "savedRecipes") as? [Data] ?? []
+        savedRecipes = stored.compactMap { try? JSONDecoder().decode(RecipeImportResponse.self, from: $0) }
+    }
+
+    private func deleteRecipes(at offsets: IndexSet) {
+        let ids = offsets.map { filteredRecipes[$0].id }
+        savedRecipes.removeAll { ids.contains($0.id) }
+        let encoder = JSONEncoder()
+        let stored = savedRecipes.compactMap { try? encoder.encode($0) }
+        UserDefaults(suiteName: groupID)?.set(stored, forKey: "savedRecipes")
+    }
+}
+
+struct RecipeDetailView: View {
+    let recipe: RecipeImportResponse
+    private let green = Color(red: 0.19, green: 0.29, blue: 0.23)
+
+    var body: some View {
+        List {
+            Section {
+                Text(recipe.description).foregroundStyle(.secondary)
+                LabeledContent("Kategoria", value: recipe.category)
+                if let servings = recipe.servings { LabeledContent("Porcje", value: String(servings)) }
+                if let prep = recipe.prepMinutes { LabeledContent("Przygotowanie", value: "\(prep) min") }
+                if let cook = recipe.cookMinutes { LabeledContent("Gotowanie", value: "\(cook) min") }
+            }
+            Section("Składniki") {
+                ForEach(recipe.ingredients) { ingredient in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(ingredient.name).font(.body)
+                        Text([ingredient.amount ?? "Ilość niepodana", ingredient.unit ?? "", ingredient.note]
+                            .filter { !$0.isEmpty }.joined(separator: " · "))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }.padding(.vertical, 2)
+                }
+            }
+            Section("Przygotowanie") {
+                ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("\(index + 1)").font(.headline).foregroundStyle(green)
+                            .frame(width: 25, height: 25).background(green.opacity(0.1), in: Circle())
+                        Text(step)
+                    }.padding(.vertical, 4)
+                }
+            }
+            if !recipe.tags.isEmpty {
+                Section("Tagi") {
+                    Text(recipe.tags.joined(separator: " · ")).foregroundStyle(.secondary)
+                }
+            }
+            if recipe.needsReview || !recipe.uncertainties.isEmpty {
+                Section("Do weryfikacji") {
+                    Label("Ten przepis zawiera niepewne lub brakujące informacje.", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    ForEach(recipe.uncertainties, id: \.self) { Text($0) }
+                }
+            }
+            if let source = recipe.sourceURL, let url = URL(string: source) {
+                Section("Źródło") { Link("Otwórz oryginalny post", destination: url) }
+            }
+        }
+        .navigationTitle(recipe.name)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
