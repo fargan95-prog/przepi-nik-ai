@@ -188,7 +188,7 @@ struct RecipeHomeView: View {
         persistRecipes()
     }
 
-    private func updateRecipe(_ updated: RecipeImportResponse, originalID: String) {
+    private func updateRecipe(_ updated: RecipeImportResponse, originalID: UUID) {
         if let index = savedRecipes.firstIndex(where: { $0.id == originalID }) {
             savedRecipes[index] = updated
             persistRecipes()
@@ -204,11 +204,11 @@ struct RecipeHomeView: View {
 struct RecipeDetailView: View {
     @State private var recipe: RecipeImportResponse
     @State private var showEditor = false
-    let onSave: (RecipeImportResponse, String) -> Void
-    @State private var originalID: String
+    let onSave: (RecipeImportResponse, UUID) -> Void
+    @State private var originalID: UUID
     private let green = Color(red: 0.19, green: 0.29, blue: 0.23)
 
-    init(recipe: RecipeImportResponse, onSave: @escaping (RecipeImportResponse, String) -> Void) {
+    init(recipe: RecipeImportResponse, onSave: @escaping (RecipeImportResponse, UUID) -> Void) {
         _recipe = State(initialValue: recipe)
         _originalID = State(initialValue: recipe.id)
         self.onSave = onSave
