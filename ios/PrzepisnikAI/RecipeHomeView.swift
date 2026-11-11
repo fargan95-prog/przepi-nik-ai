@@ -408,6 +408,8 @@ struct ShareImportView: View {
                 }
                 Section("Analiza AI") {
                     TextField("Dodatkowa notatka (opcjonalnie)", text: $note, axis: .vertical)
+                    Text("Udostępnione zdjęcia, tekst i dźwięk zostaną wysłane do usługi AI w celu przygotowania przepisu. Zapisane przepisy pozostają w bibliotece na tym urządzeniu.")
+                        .font(.caption).foregroundStyle(.secondary)
                     Button {
                         Task { await importRecipe() }
                     } label: {
