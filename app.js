@@ -36,9 +36,9 @@ function applyAI(data){
 async function analyze(){
  let text=$('importText').value.trim(),url=$('importUrl').value.trim(),endpoint=(localStorage.getItem('przepisnik-ai-endpoint')||'https://przepi-nik-ai-agent.onrender.com/api/recipe-parse'),accessToken=(localStorage.getItem('przepisnik-ai-token')||'');
  if(!text&&!url&&!currentImages.length&&!currentImage&&!currentVideo){toast('Dodaj link, tekst, zdjęcie lub plik wideo/audio');return}
- if(!endpoint||!accessToken){toast('Najpierw skonfiguruj adres i hasło agenta w Ustawieniach.');return}
+ if(!endpoint){toast('Brak adresu agenta AI.');return}
  let b=$('analyzeBtn');b.disabled=true;b.textContent='Agent analizuje materiał…';
- try{let res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','X-App-Token':accessToken},body:JSON.stringify({text,url,imageData:currentImage||currentImages[0]||null,imageDataList:currentImages,videoData:currentVideo||null,categories})});if(!res.ok){let msg='Błąd serwera: '+res.status;try{let j=await res.json();if(j.error)msg=j.error}catch{}throw new Error(msg)}let data=await res.json();applyAI(data)}
+ try{let res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,url,imageData:currentImage||currentImages[0]||null,imageDataList:currentImages,videoData:currentVideo||null,categories})});if(!res.ok){let msg='Błąd serwera: '+res.status;try{let j=await res.json();if(j.error)msg=j.error}catch{}throw new Error(msg)}let data=await res.json();applyAI(data)}
  catch(e){toast('Nie udało się przeanalizować materiału: '+e.message)}
  finally{b.disabled=false;b.textContent='✦ Agent AI – utwórz cały przepis'}
 }
