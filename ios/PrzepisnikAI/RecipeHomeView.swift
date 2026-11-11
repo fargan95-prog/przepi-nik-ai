@@ -20,7 +20,11 @@ struct RecipeHomeView: View {
         savedRecipes.filter { recipe in
             let matchesCategory = selectedCategory == "Wszystkie" || recipe.category == selectedCategory
             let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let matchesSearch = query.isEmpty || recipe.name.localizedCaseInsensitiveContains(query) ||
+            let matchesSearch = query.isEmpty ||
+                recipe.name.localizedCaseInsensitiveContains(query) ||
+                recipe.description.localizedCaseInsensitiveContains(query) ||
+                recipe.category.localizedCaseInsensitiveContains(query) ||
+                recipe.subcategory.localizedCaseInsensitiveContains(query) ||
                 recipe.ingredients.contains { $0.name.localizedCaseInsensitiveContains(query) } ||
                 recipe.tags.contains { $0.localizedCaseInsensitiveContains(query) }
             return matchesCategory && matchesSearch
