@@ -10,6 +10,8 @@ struct RecipeHomeView: View {
     @State private var searchText = ""
     @State private var selectedCategory = "Wszystkie"
     @State private var showImport = false
+    @State private var showManualEditor = false
+    @State private var draftRecipe = RecipeImportResponse()
     private let green = Color(red: 0.19, green: 0.29, blue: 0.23)
     private let groupID = "group.com.fargan95.przepisnikai"
 
@@ -141,6 +143,12 @@ struct RecipeHomeView: View {
             .sheet(isPresented: $showImport, onDismiss: { loadSaved(); loadShare() }) {
                 ShareImportView(items: sharedItems, shareErrors: shareErrors)
             }
+            .sheet(isPresented: $showManualEditor) {
+                RecipeEditorView(recipe: draftRecipe) { updated in
+                    savedRecipes.insert(updated, at: 0)
+                    persistRecipes()
+                }
+            }
             .onAppear {
                 loadShare()
                 loadSaved()
@@ -184,9 +192,8 @@ struct RecipeHomeView: View {
     }
 
     private func addBlankRecipe() {
-        let recipe = RecipeImportResponse(name: "Nowy przepis")
-        savedRecipes.insert(recipe, at: 0)
-        persistRecipes()
+        draftRecipe = RecipeImportResponse(name: "")
+        showManualEditor = true
     }
 
     private func deleteRecipes(at offsets: IndexSet) {
