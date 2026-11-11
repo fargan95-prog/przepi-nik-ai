@@ -252,6 +252,17 @@ struct RecipeDetailView: View {
         return lines.filter { !$0.isEmpty }.joined(separator: "\n")
     }
 
+    private var shoppingListText: String {
+        var lines = ["Lista zakupów — \(recipe.name)"]
+        lines += recipe.ingredients.map { ingredient in
+            let quantity = scaledAmount(ingredient.amount)
+            let unit = ingredient.unit ?? ""
+            let note = ingredient.note.isEmpty ? "" : " (\(ingredient.note))"
+            return "• \(quantity) \(unit) \(ingredient.name)\(note)"
+        }
+        return lines.joined(separator: "\n")
+    }
+
     private func scaledAmount(_ amount: String?) -> String {
         guard let amount, let baseServings = recipe.servings, baseServings > 0,
               let quantity = Double(amount.replacingOccurrences(of: ",", with: ".")),
@@ -278,6 +289,9 @@ struct RecipeDetailView: View {
             Section("Składniki") {
                 if recipe.servings != nil {
                     Stepper("Porcje: \(displayServings)", value: $displayServings, in: 1...30)
+                }
+                ShareLink(item: shoppingListText) {
+                    Label("Udostępnij listę zakupów", systemImage: "cart")
                 }
                 ForEach(recipe.ingredients) { ingredient in
                     VStack(alignment: .leading, spacing: 2) {
