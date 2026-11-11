@@ -483,6 +483,7 @@ struct RecipeImportResponse: Codable, Identifiable {
 struct ImportEnvelope: Decodable { let ok: Bool; let recipe: RecipeImportResponse?; let error: String?; let sourceURL: String? }
 
 struct ShareImportView: View {
+    @Environment(\.dismiss) private var dismiss
     let items: [String]
     let shareErrors: [String]
     @State private var note = ""
@@ -553,7 +554,14 @@ struct ShareImportView: View {
                         }
                     }
                 }
-            }.navigationTitle("Import przepisu")
+            }
+            .navigationTitle("Import przepisu")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Zamknij") { dismiss() }
+                }
+            }
         }
     }
 
