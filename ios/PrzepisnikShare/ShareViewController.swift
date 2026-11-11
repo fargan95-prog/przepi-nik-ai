@@ -44,8 +44,9 @@ final class ShareViewController: UIViewController {
                 taskGroup.enter()
                 provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, error in
                     defer { taskGroup.leave() }
-                    if let url = item as? URL {
-                        lock.lock(); urls.append(url.absoluteString); lock.unlock()
+                    let sharedURL = (item as? URL) ?? (item as? NSURL).map { $0 as URL } ?? (item as? String).flatMap(URL.init(string:))
+                    if let sharedURL {
+                        lock.lock(); urls.append(sharedURL.absoluteString); lock.unlock()
                     } else if let error {
                         lock.lock(); errors.append(error.localizedDescription); lock.unlock()
                     }
