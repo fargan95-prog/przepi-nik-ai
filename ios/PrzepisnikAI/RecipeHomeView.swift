@@ -55,7 +55,7 @@ struct RecipeHomeView: View {
     }
 }
 
-struct RecipeImportResponse: Decodable {
+struct RecipeImportResponse: Codable {
     struct Ingredient: Decodable, Identifiable {
         var name: String; var amount: String?; var unit: String?; var note: String
         var id: String { name + (amount ?? "") }
@@ -65,8 +65,9 @@ struct RecipeImportResponse: Decodable {
     var prepMinutes: Int?; var cookMinutes: Int?
     var ingredients: [Ingredient]; var steps: [String]; var tags: [String]
     var needsReview: Bool; var uncertainties: [String]
+    var sourceURL: String? = nil
 }
-struct ImportEnvelope: Decodable { let ok: Bool; let recipe: RecipeImportResponse?; let error: String? }
+struct ImportEnvelope: Decodable { let ok: Bool; let recipe: RecipeImportResponse?; let error: String?; let sourceURL: String? }
 
 struct ShareImportView: View {
     let items: [String]
@@ -132,6 +133,8 @@ struct ShareImportView: View {
                 guard let data = try? Data(contentsOf: file), data.count <= 24 * 1024 * 1024 else { continue }
                 let mime = file.pathExtension.lowercased() == "jpg" || file.pathExtension.lowercased() == "jpeg" ? "image/jpeg" :
                     file.pathExtension.lowercased() == "png" ? "image/png" :
+                    ["heic", "heif"].contains(file.pathExtension.lowercased()) ? "image/heic" :
+                    file.pathExtension.lowercased() == "webp" ? "image/webp" :
                     file.pathExtension.lowercased() == "mp4" ? "video/mp4" :
                     file.pathExtension.lowercased() == "mov" ? "video/quicktime" : "application/octet-stream"
                 body.append(Data("--\\(boundary)\\r\\nContent-Disposition: form-data; name=\\"files\\"; filename=\\"\\(file.lastPathComponent)\\"\\r\\nContent-Type: \\(mime)\\r\\n\\r\\n".utf8))
@@ -147,7 +150,9 @@ struct ShareImportView: View {
             }
             let result = try JSONDecoder().decode(ImportEnvelope.self, from: data)
             guard result.ok, let parsed = result.recipe else { throw NSError(domain: "Import", code: 2, userInfo: [NSLocalizedDescriptionKey: "Materiał nie zawiera rozpoznawalnego przepisu."]) }
+            parsed.sourceURL = result.sourceURL ?? sourceURL
             recipe = parsed
+            guard parsed.isRecipe else { return }
             let encoder = JSONEncoder()
             if let data = try? encoder.encode(parsed) {
                 let defaults = UserDefaults(suiteName: groupID)
