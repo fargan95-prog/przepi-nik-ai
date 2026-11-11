@@ -18,6 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Swift parser
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+      - name: Parse Swift source files
+        run: |
+          swiftc -frontend -parse ios/PrzepisnikAI/PrzepisnikAIApp.swift
+          swiftc -frontend -parse ios/PrzepisnikAI/RecipeHomeView.swift
+          swiftc -frontend -parse ios/PrzepisnikShare/ShareViewController.swift
       - name: Check backend JavaScript syntax
         run: node --check native-backend/server.js
 
