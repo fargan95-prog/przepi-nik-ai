@@ -73,13 +73,17 @@ struct RecipeHomeView: View {
                         }.padding(.vertical, 4)
                     }
                     if filteredRecipes.isEmpty {
-                        ContentUnavailableView(
-                            searchText.isEmpty ? "Biblioteka jest pusta" : "Brak wyników",
-                            systemImage: searchText.isEmpty ? "book.closed" : "magnifyingglass",
-                            description: Text(searchText.isEmpty
-                                ? "Zaimportuj pierwszy przepis z Instagrama lub dodaj go przez udostępnienie zdjęcia."
+                        VStack(spacing: 10) {
+                            Image(systemName: searchText.isEmpty ? "book.closed" : "magnifyingglass")
+                                .font(.system(size: 34)).foregroundStyle(green.opacity(0.65))
+                            Text(searchText.isEmpty ? "Biblioteka jest pusta" : "Brak wyników")
+                                .font(.headline)
+                            Text(searchText.isEmpty
+                                ? "Dodaj przepis ręcznie lub zaimportuj go z Instagrama."
                                 : "Zmień wyszukiwaną frazę lub kategorię.")
-                        )
+                                .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity).padding(.vertical, 30)
                         .listRowBackground(Color.clear)
                     } else {
                         ForEach(filteredRecipes) { recipe in
@@ -112,7 +116,7 @@ struct RecipeHomeView: View {
             .background(Color(red: 0.97, green: 0.96, blue: 0.93))
             .searchable(text: $searchText, prompt: "Szukaj przepisu lub składnika")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button { loadShare(); showImport = true } label: {
                             Label("Importuj z udostępnienia", systemImage: "square.and.arrow.down")
@@ -124,7 +128,7 @@ struct RecipeHomeView: View {
                         Image(systemName: "plus.circle.fill").font(.title2).foregroundStyle(green)
                     }
                 }
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     EditButton().disabled(savedRecipes.isEmpty)
                 }
             }
@@ -242,7 +246,7 @@ struct RecipeDetailView: View {
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Edytuj") { showEditor = true }
             }
         }
