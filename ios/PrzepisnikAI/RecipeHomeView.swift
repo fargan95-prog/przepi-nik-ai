@@ -182,8 +182,8 @@ struct RecipeDetailView: View {
                 Text(recipe.description).foregroundStyle(.secondary)
                 LabeledContent("Kategoria", value: recipe.category)
                 if let servings = recipe.servings { LabeledContent("Porcje", value: String(servings)) }
-                if let prep = recipe.prepMinutes { LabeledContent("Przygotowanie", value: "\\(prep) min") }
-                if let cook = recipe.cookMinutes { LabeledContent("Gotowanie", value: "\\(cook) min") }
+                if let prep = recipe.prepMinutes { LabeledContent("Przygotowanie", value: "\(prep) min") }
+                if let cook = recipe.cookMinutes { LabeledContent("Gotowanie", value: "\(cook) min") }
             }
             Section("Składniki") {
                 ForEach(recipe.ingredients) { ingredient in
@@ -196,9 +196,9 @@ struct RecipeDetailView: View {
                 }
             }
             Section("Przygotowanie") {
-                ForEach(Array(recipe.steps.enumerated()), id: \\.offset) { index, step in
+                ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
                     HStack(alignment: .top, spacing: 12) {
-                        Text("\\(index + 1)").font(.headline).foregroundStyle(green)
+                        Text("\(index + 1)").font(.headline).foregroundStyle(green)
                             .frame(width: 25, height: 25).background(green.opacity(0.1), in: Circle())
                         Text(step)
                     }.padding(.vertical, 4)
@@ -211,7 +211,7 @@ struct RecipeDetailView: View {
                 Section("Do weryfikacji") {
                     Label("Ten przepis zawiera niepewne lub brakujące informacje.", systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                    ForEach(recipe.uncertainties, id: \\.self) { Text($0) }
+                    ForEach(recipe.uncertainties, id: \.self) { Text($0) }
                 }
             }
             if let source = recipe.sourceURL, let url = URL(string: source) {
@@ -228,14 +228,14 @@ struct RecipeDetailView: View {
         .sheet(isPresented: $showEditor) {
             RecipeEditorView(recipe: recipe) { updated in
                 recipe = updated
-                onSave(updated)
+                onSave(updated, originalID)
             }
         }
     }
 }
 
 struct RecipeEditorView: View {
-    @Environment(\\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss
     @State private var recipe: RecipeImportResponse
     let onSave: (RecipeImportResponse) -> Void
 
@@ -280,8 +280,8 @@ struct RecipeEditorView: View {
                     } label: { Label("Dodaj składnik", systemImage: "plus") }
                 }
                 Section("Przygotowanie") {
-                    ForEach(recipe.steps.indices, id: \\.self) { index in
-                        TextField("Krok \\(index + 1)", text: $recipe.steps[index], axis: .vertical)
+                    ForEach(recipe.steps.indices, id: \.self) { index in
+                        TextField("Krok \(index + 1)", text: $recipe.steps[index], axis: .vertical)
                     }
                     .onDelete { recipe.steps.remove(atOffsets: $0) }
                     Button { recipe.steps.append("") } label: { Label("Dodaj krok", systemImage: "plus") }
@@ -342,7 +342,7 @@ struct ShareImportView: View {
         NavigationStack {
             Form {
                 Section("Otrzymany materiał") {
-                    ForEach(Array(items.enumerated()), id: \\.offset) { _, item in Text(item).textSelection(.enabled) }
+                    ForEach(Array(items.enumerated()), id: \.offset) { _, item in Text(item).textSelection(.enabled) }
                 }
                 Section("Analiza AI") {
                     TextField("Dodatkowa notatka (opcjonalnie)", text: $note, axis: .vertical)
@@ -373,10 +373,10 @@ struct ShareImportView: View {
                             ForEach(recipe.ingredients) { ingredient in
                                 Text([ingredient.name, ingredient.amount ?? "nie podano", ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
                             }
-                            ForEach(Array(recipe.steps.enumerated()), id: \\.offset) { index, step in Text("\\(index + 1). \\(step)") }
+                            ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in Text("\(index + 1). \(step)") }
                             if recipe.needsReview {
                                 Label("Wymaga sprawdzenia", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                                ForEach(recipe.uncertainties, id: \\.self) { Text($0) }
+                                ForEach(recipe.uncertainties, id: \.self) { Text($0) }
                             }
                             if let source = recipe.sourceURL, let url = URL(string: source) {
                                 Link("Oryginalne źródło", destination: url)
@@ -393,11 +393,11 @@ struct ShareImportView: View {
         isLoading = true; errorMessage = nil
         defer { isLoading = false }
         var request = URLRequest(url: url); request.httpMethod = "POST"
-        let boundary = "Boundary-\\(UUID().uuidString)"
-        request.setValue("multipart/form-data; boundary=\\(boundary)", forHTTPHeaderField: "Content-Type")
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         var body = Data()
         func field(_ name: String, _ value: String) {
-            body.append(Data("--\\(boundary)\\r\\nContent-Disposition: form-data; name=\\"\\(name)\\"\\r\\n\\r\\n\\(value)\\r\\n".utf8))
+            body.append(Data("--\(boundary)\\r\\nContent-Disposition: form-data; name=\\"\(name)\\"\\r\\n\\r\\n\(value)\\r\\n".utf8))
         }
         let sourceURL = items.first(where: { value in
             guard let url = URL(string: value), let host = url.host?.lowercased() else { return false }
@@ -416,11 +416,11 @@ struct ShareImportView: View {
                     file.pathExtension.lowercased() == "webp" ? "image/webp" :
                     file.pathExtension.lowercased() == "mp4" ? "video/mp4" :
                     file.pathExtension.lowercased() == "mov" ? "video/quicktime" : "application/octet-stream"
-                body.append(Data("--\\(boundary)\\r\\nContent-Disposition: form-data; name=\\"files\\"; filename=\\"\\(file.lastPathComponent)\\"\\r\\nContent-Type: \\(mime)\\r\\n\\r\\n".utf8))
+                body.append(Data("--\(boundary)\\r\\nContent-Disposition: form-data; name=\\"files\\"; filename=\\"\(file.lastPathComponent)\\"\\r\\nContent-Type: \(mime)\\r\\n\\r\\n".utf8))
                 body.append(data); body.append(Data("\\r\\n".utf8))
             }
         }
-        body.append(Data("--\\(boundary)--\\r\\n".utf8)); request.httpBody = body
+        body.append(Data("--\(boundary)--\\r\\n".utf8)); request.httpBody = body
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
