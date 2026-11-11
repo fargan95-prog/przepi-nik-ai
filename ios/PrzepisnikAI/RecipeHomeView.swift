@@ -140,7 +140,13 @@ struct ShareImportView: View {
         func field(_ name: String, _ value: String) {
             body.append(Data("--\\(boundary)\\r\\nContent-Disposition: form-data; name=\\"\\(name)\\"\\r\\n\\r\\n\\(value)\\r\\n".utf8))
         }
-        field("text", (items.joined(separator: "\\n") + "\\n" + note).trimmingCharacters(in: .whitespacesAndNewlines))
+        let sourceURL = items.first(where: { value in
+            guard let url = URL(string: value), let host = url.host?.lowercased() else { return false }
+            return host == "instagram.com" || host.hasSuffix(".instagram.com")
+        })
+        let nonURLText = items.filter { $0 != sourceURL && !$0.hasPrefix("shared-") }
+        field("text", (nonURLText.joined(separator: "\\n") + "\\n" + note).trimmingCharacters(in: .whitespacesAndNewlines))
+        if let sourceURL { field("sourceURL", sourceURL) }
         if let inbox = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)?.appendingPathComponent("ShareInbox") {
             let files = (try? FileManager.default.contentsOfDirectory(at: inbox, includingPropertiesForKeys: nil)) ?? []
             for file in files where file.lastPathComponent.hasPrefix("shared-") {
