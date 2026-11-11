@@ -82,7 +82,7 @@ struct RecipeHomeView: View {
                     } else {
                         ForEach(filteredRecipes) { recipe in
                             NavigationLink {
-                                RecipeDetailView(recipe: recipe)
+                                RecipeDetailView(recipe: recipe, onSave: updateRecipe)
                             } label: {
                                 VStack(alignment: .leading, spacing: 5) {
                                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
@@ -147,15 +147,32 @@ struct RecipeHomeView: View {
     private func deleteRecipes(at offsets: IndexSet) {
         let ids = offsets.map { filteredRecipes[$0].id }
         savedRecipes.removeAll { ids.contains($0.id) }
-        let encoder = JSONEncoder()
-        let stored = savedRecipes.compactMap { try? encoder.encode($0) }
+        persistRecipes()
+    }
+
+    private func updateRecipe(_ updated: RecipeImportResponse) {
+        if let index = savedRecipes.firstIndex(where: { $0.id == updated.id }) {
+            savedRecipes[index] = updated
+            persistRecipes()
+        }
+    }
+
+    private func persistRecipes() {
+        let stored = savedRecipes.compactMap { try? JSONEncoder().encode($0) }
         UserDefaults(suiteName: groupID)?.set(stored, forKey: "savedRecipes")
     }
 }
 
 struct RecipeDetailView: View {
-    let recipe: RecipeImportResponse
+    @State private var recipe: RecipeImportResponse
+    @State private var showEditor = false
+    let onSave: (RecipeImportResponse) -> Void
     private let green = Color(red: 0.19, green: 0.29, blue: 0.23)
+
+    init(recipe: RecipeImportResponse, onSave: @escaping (RecipeImportResponse) -> Void) {
+        _recipe = State(initialValue: recipe)
+        self.onSave = onSave
+    }
 
     var body: some View {
         List {
@@ -163,8 +180,8 @@ struct RecipeDetailView: View {
                 Text(recipe.description).foregroundStyle(.secondary)
                 LabeledContent("Kategoria", value: recipe.category)
                 if let servings = recipe.servings { LabeledContent("Porcje", value: String(servings)) }
-                if let prep = recipe.prepMinutes { LabeledContent("Przygotowanie", value: "\(prep) min") }
-                if let cook = recipe.cookMinutes { LabeledContent("Gotowanie", value: "\(cook) min") }
+                if let prep = recipe.prepMinutes { LabeledContent("Przygotowanie", value: "\\(prep) min") }
+                if let cook = recipe.cookMinutes { LabeledContent("Gotowanie", value: "\\(cook) min") }
             }
             Section("Składniki") {
                 ForEach(recipe.ingredients) { ingredient in
@@ -177,24 +194,22 @@ struct RecipeDetailView: View {
                 }
             }
             Section("Przygotowanie") {
-                ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
+                ForEach(Array(recipe.steps.enumerated()), id: \\.offset) { index, step in
                     HStack(alignment: .top, spacing: 12) {
-                        Text("\(index + 1)").font(.headline).foregroundStyle(green)
+                        Text("\\(index + 1)").font(.headline).foregroundStyle(green)
                             .frame(width: 25, height: 25).background(green.opacity(0.1), in: Circle())
                         Text(step)
                     }.padding(.vertical, 4)
                 }
             }
             if !recipe.tags.isEmpty {
-                Section("Tagi") {
-                    Text(recipe.tags.joined(separator: " · ")).foregroundStyle(.secondary)
-                }
+                Section("Tagi") { Text(recipe.tags.joined(separator: " · ")).foregroundStyle(.secondary) }
             }
             if recipe.needsReview || !recipe.uncertainties.isEmpty {
                 Section("Do weryfikacji") {
                     Label("Ten przepis zawiera niepewne lub brakujące informacje.", systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                    ForEach(recipe.uncertainties, id: \.self) { Text($0) }
+                    ForEach(recipe.uncertainties, id: \\.self) { Text($0) }
                 }
             }
             if let source = recipe.sourceURL, let url = URL(string: source) {
@@ -203,6 +218,96 @@ struct RecipeDetailView: View {
         }
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Edytuj") { showEditor = true }
+            }
+        }
+        .sheet(isPresented: $showEditor) {
+            RecipeEditorView(recipe: recipe) { updated in
+                recipe = updated
+                onSave(updated)
+            }
+        }
+    }
+}
+
+struct RecipeEditorView: View {
+    @Environment(\\.dismiss) private var dismiss
+    @State private var recipe: RecipeImportResponse
+    let onSave: (RecipeImportResponse) -> Void
+
+    init(recipe: RecipeImportResponse, onSave: @escaping (RecipeImportResponse) -> Void) {
+        _recipe = State(initialValue: recipe)
+        self.onSave = onSave
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Podstawowe informacje") {
+                    TextField("Nazwa przepisu", text: $recipe.name)
+                    TextField("Opis", text: $recipe.description, axis: .vertical)
+                    TextField("Kategoria", text: $recipe.category)
+                    TextField("Podkategoria", text: $recipe.subcategory)
+                    TextField("Tagi (oddziel przecinkami)", text: Binding(
+                        get: { recipe.tags.joined(separator: ", ") },
+                        set: { recipe.tags = $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }
+                    ))
+                }
+                Section("Składniki") {
+                    ForEach($recipe.ingredients) { $ingredient in
+                        VStack(alignment: .leading, spacing: 6) {
+                            TextField("Składnik", text: $ingredient.name)
+                            HStack {
+                                TextField("Ilość", text: Binding(
+                                    get: { ingredient.amount ?? "" },
+                                    set: { ingredient.amount = $0.isEmpty ? nil : $0 }
+                                ))
+                                TextField("Jednostka", text: Binding(
+                                    get: { ingredient.unit ?? "" },
+                                    set: { ingredient.unit = $0.isEmpty ? nil : $0 }
+                                ))
+                            }
+                            TextField("Uwagi", text: $ingredient.note)
+                        }
+                    }
+                    .onDelete { recipe.ingredients.remove(atOffsets: $0) }
+                    Button {
+                        recipe.ingredients.append(.init(name: "", amount: nil, unit: nil, note: ""))
+                    } label: { Label("Dodaj składnik", systemImage: "plus") }
+                }
+                Section("Przygotowanie") {
+                    ForEach(recipe.steps.indices, id: \\.self) { index in
+                        TextField("Krok \\(index + 1)", text: $recipe.steps[index], axis: .vertical)
+                    }
+                    .onDelete { recipe.steps.remove(atOffsets: $0) }
+                    Button { recipe.steps.append("") } label: { Label("Dodaj krok", systemImage: "plus") }
+                }
+                Section("Porcje i czas") {
+                    TextField("Liczba porcji", text: Binding(
+                        get: { recipe.servings.map(String.init) ?? "" },
+                        set: { recipe.servings = Int($0) }
+                    )).keyboardType(.numberPad)
+                    TextField("Czas przygotowania (min)", text: Binding(
+                        get: { recipe.prepMinutes.map(String.init) ?? "" },
+                        set: { recipe.prepMinutes = Int($0) }
+                    )).keyboardType(.numberPad)
+                    TextField("Czas gotowania (min)", text: Binding(
+                        get: { recipe.cookMinutes.map(String.init) ?? "" },
+                        set: { recipe.cookMinutes = Int($0) }
+                    )).keyboardType(.numberPad)
+                }
+            }
+            .navigationTitle("Edytuj przepis")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Anuluj") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Zapisz") { onSave(recipe); dismiss() }
+                }
+            }
+        }
     }
 }
 
