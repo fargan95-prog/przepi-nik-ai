@@ -206,7 +206,7 @@ struct RecipeDetailView: View {
     }
 }
 
-struct RecipeImportResponse: Codable {
+struct RecipeImportResponse: Codable, Identifiable {
     struct Ingredient: Codable, Identifiable {
         var name: String; var amount: String?; var unit: String?; var note: String
         var id: String { name + (amount ?? "") }
@@ -217,6 +217,7 @@ struct RecipeImportResponse: Codable {
     var ingredients: [Ingredient]; var steps: [String]; var tags: [String]
     var needsReview: Bool; var uncertainties: [String]
     var sourceURL: String? = nil
+    var id: String { (sourceURL ?? name) + name }
 }
 struct ImportEnvelope: Decodable { let ok: Bool; let recipe: RecipeImportResponse?; let error: String?; let sourceURL: String? }
 
