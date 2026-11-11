@@ -549,6 +549,12 @@ struct ShareImportView: View {
             if let data = try? encoder.encode(parsed) {
                 let defaults = UserDefaults(suiteName: groupID)
                 var saved = defaults?.array(forKey: "savedRecipes") as? [Data] ?? []
+                if let source = parsed.sourceURL, !source.isEmpty {
+                    saved.removeAll { storedData in
+                        guard let existing = try? JSONDecoder().decode(RecipeImportResponse.self, from: storedData) else { return false }
+                        return existing.sourceURL == source
+                    }
+                }
                 saved.insert(data, at: 0)
                 defaults?.set(Array(saved.prefix(500)), forKey: "savedRecipes")
                 savedMessage = "Przepis zapisany w bibliotece na tym urządzeniu."
