@@ -22,6 +22,10 @@ targets:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         CODE_SIGN_ENTITLEMENTS: PrzepisnikAI/PrzepisnikAI.entitlements
+    dependencies:
+      - target: PrzepisnikShare
+        embed: true
+        codeSign: true
     entitlements:
       path: PrzepisnikAI/PrzepisnikAI.entitlements
   PrzepisnikShare:
@@ -36,5 +40,3 @@ targets:
         CODE_SIGN_ENTITLEMENTS: PrzepisnikShare/PrzepisnikShare.entitlements
         SKIP_INSTALL: YES
         APPLICATION_EXTENSION_API_ONLY: YES
-    dependencies:
-      - target: PrzepisnikAI
