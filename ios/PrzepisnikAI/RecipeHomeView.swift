@@ -226,6 +226,7 @@ struct RecipeHomeView: View {
 struct RecipeDetailView: View {
     @State private var recipe: RecipeImportResponse
     @State private var displayServings: Int
+    @State private var checkedIngredients: Set<UUID> = []
     @State private var showEditor = false
     let onSave: (RecipeImportResponse, UUID) -> Void
     @State private var originalID: UUID
@@ -300,6 +301,32 @@ struct RecipeDetailView: View {
                             .filter { !$0.isEmpty }.joined(separator: " · "))
                             .font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical, 2)
+                }
+            }
+            if !recipe.ingredients.isEmpty {
+                Section("Lista zakupów") {
+                    Text("Zaznacz produkty, które masz już kupione.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    ForEach(recipe.ingredients) { ingredient in
+                        Toggle(isOn: Binding(
+                            get: { checkedIngredients.contains(ingredient.id) },
+                            set: { isChecked in
+                                if isChecked { checkedIngredients.insert(ingredient.id) }
+                                else { checkedIngredients.remove(ingredient.id) }
+                            }
+                        )) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(ingredient.name)
+                                    .strikethrough(checkedIngredients.contains(ingredient.id))
+                                Text("\(scaledAmount(ingredient.amount)) \(ingredient.unit ?? "")")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    if !checkedIngredients.isEmpty {
+                        Button("Wyczyść zaznaczenie") { checkedIngredients.removeAll() }
+                            .font(.caption)
+                    }
                 }
             }
             Section("Przygotowanie") {
