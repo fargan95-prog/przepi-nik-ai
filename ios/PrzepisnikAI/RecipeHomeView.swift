@@ -526,7 +526,7 @@ struct ShareImportView: View {
                     let frames = extractVideoFrames(from: file)
                     for (frameIndex, frame) in frames.enumerated() {
                         let frameName = "reel-frame-\(frameIndex + 1).jpg"
-                        body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\\"files\\"; filename=\\"\(frameName)\\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8))
+                        body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"files\"; filename=\"\(frameName)\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8))
                         body.append(frame)
                         body.append(Data("\r\n".utf8))
                     }
