@@ -367,8 +367,12 @@ struct RecipeDetailView: View {
         .sheet(isPresented: $showEditor) {
             RecipeEditorView(recipe: recipe) { updated in
                 recipe = updated
+                if let servings = updated.servings {
+                    displayServings = max(1, servings)
+                }
                 onSave(updated, originalID)
                 originalID = updated.id
+                checkedIngredients = checkedIngredients.intersection(Set(updated.ingredients.map(\.id)))
             }
         }
     }
