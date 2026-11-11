@@ -373,18 +373,74 @@ struct RecipeEditorView: View {
 
 struct RecipeImportResponse: Codable, Identifiable {
     struct Ingredient: Codable, Identifiable {
-        var name: String; var amount: String?; var unit: String?; var note: String
-        var id: String { name + (amount ?? "") }
+        var id: UUID
+        var name: String
+        var amount: String?
+        var unit: String?
+        var note: String
+
+        init(name: String, amount: String?, unit: String?, note: String) {
+            self.id = UUID()
+            self.name = name
+            self.amount = amount
+            self.unit = unit
+            self.note = note
+        }
+
+        private enum CodingKeys: String, CodingKey { case id, name, amount, unit, note }
+        init(from decoder: Decoder) throws {
+            let values = try decoder.container(keyedBy: CodingKeys.self)
+            id = try values.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+            name = try values.decode(String.self, forKey: .name)
+            amount = try values.decodeIfPresent(String.self, forKey: .amount)
+            unit = try values.decodeIfPresent(String.self, forKey: .unit)
+            note = try values.decodeIfPresent(String.self, forKey: .note) ?? ""
+        }
     }
-    var isRecipe: Bool; var name: String; var description: String
-    var category: String; var subcategory: String; var servings: Int?
-    var prepMinutes: Int?; var cookMinutes: Int?
-    var ingredients: [Ingredient]; var steps: [String]; var tags: [String]
-    var needsReview: Bool; var uncertainties: [String]
+
+    var recipeID: UUID
+    var isRecipe: Bool
+    var name: String
+    var description: String
+    var category: String
+    var subcategory: String
+    var servings: Int?
+    var prepMinutes: Int?
+    var cookMinutes: Int?
+    var ingredients: [Ingredient]
+    var steps: [String]
+    var tags: [String]
+    var needsReview: Bool
+    var uncertainties: [String]
     var sourceURL: String? = nil
-    var id: String { (sourceURL ?? "") + name }
+    var id: UUID { recipeID }
+
+    private enum CodingKeys: String, CodingKey {
+        case recipeID, isRecipe, name, description, category, subcategory, servings
+        case prepMinutes, cookMinutes, ingredients, steps, tags, needsReview, uncertainties, sourceURL
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        recipeID = try values.decodeIfPresent(UUID.self, forKey: .recipeID) ?? UUID()
+        isRecipe = try values.decode(Bool.self, forKey: .isRecipe)
+        name = try values.decode(String.self, forKey: .name)
+        description = try values.decode(String.self, forKey: .description)
+        category = try values.decode(String.self, forKey: .category)
+        subcategory = try values.decode(String.self, forKey: .subcategory)
+        servings = try values.decodeIfPresent(Int.self, forKey: .servings)
+        prepMinutes = try values.decodeIfPresent(Int.self, forKey: .prepMinutes)
+        cookMinutes = try values.decodeIfPresent(Int.self, forKey: .cookMinutes)
+        ingredients = try values.decode([Ingredient].self, forKey: .ingredients)
+        steps = try values.decode([String].self, forKey: .steps)
+        tags = try values.decode([String].self, forKey: .tags)
+        needsReview = try values.decode(Bool.self, forKey: .needsReview)
+        uncertainties = try values.decode([String].self, forKey: .uncertainties)
+        sourceURL = try values.decodeIfPresent(String.self, forKey: .sourceURL)
+    }
 
     init(name: String = "Nowy przepis") {
+        self.recipeID = UUID()
         self.isRecipe = true
         self.name = name
         self.description = ""
