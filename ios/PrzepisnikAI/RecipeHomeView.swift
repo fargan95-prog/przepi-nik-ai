@@ -99,7 +99,12 @@ struct RecipeHomeView: View {
                                 RecipeDetailView(recipe: recipe, onSave: updateRecipe)
                             } label: {
                                 VStack(alignment: .leading, spacing: 5) {
-                                    Text(recipe.name).font(.headline).foregroundStyle(.primary)
+                                    HStack(spacing: 6) {
+                                        Text(recipe.name).font(.headline).foregroundStyle(.primary)
+                                        if recipe.isFavorite {
+                                            Image(systemName: "star.fill").font(.caption).foregroundStyle(.yellow)
+                                        }
+                                    }
                                     Text([recipe.category, recipe.servings.map { "\($0) por." }, recipe.prepMinutes.map { "\($0) min" }]
                                         .compactMap { $0 }.joined(separator: " · "))
                                         .font(.caption).foregroundStyle(.secondary)
@@ -361,6 +366,16 @@ struct RecipeDetailView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    recipe.isFavorite.toggle()
+                    onSave(recipe, originalID)
+                } label: {
+                    Image(systemName: recipe.isFavorite ? "star.fill" : "star")
+                        .foregroundStyle(recipe.isFavorite ? .yellow : .secondary)
+                }
+                .accessibilityLabel(recipe.isFavorite ? "Usuń z ulubionych" : "Dodaj do ulubionych")
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Edytuj") { showEditor = true }
             }
         }
@@ -518,12 +533,13 @@ struct RecipeImportResponse: Codable, Identifiable {
     var tags: [String]
     var needsReview: Bool
     var uncertainties: [String]
+    var isFavorite: Bool
     var sourceURL: String? = nil
     var id: UUID { recipeID }
 
     private enum CodingKeys: String, CodingKey {
         case recipeID, isRecipe, name, description, category, subcategory, servings
-        case prepMinutes, cookMinutes, ingredients, steps, tags, needsReview, uncertainties, sourceURL
+        case prepMinutes, cookMinutes, ingredients, steps, tags, needsReview, uncertainties, isFavorite, sourceURL
     }
 
     init(from decoder: Decoder) throws {
@@ -542,6 +558,7 @@ struct RecipeImportResponse: Codable, Identifiable {
         tags = try values.decode([String].self, forKey: .tags)
         needsReview = try values.decode(Bool.self, forKey: .needsReview)
         uncertainties = try values.decode([String].self, forKey: .uncertainties)
+        isFavorite = try values.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
         sourceURL = try values.decodeIfPresent(String.self, forKey: .sourceURL)
     }
 
@@ -560,6 +577,7 @@ struct RecipeImportResponse: Codable, Identifiable {
         self.tags = []
         self.needsReview = true
         self.uncertainties = ["Uzupełnij składniki i sposób przygotowania."]
+        self.isFavorite = false
         self.sourceURL = nil
     }
 }
