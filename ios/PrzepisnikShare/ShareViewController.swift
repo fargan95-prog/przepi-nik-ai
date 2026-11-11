@@ -59,7 +59,8 @@ final class ShareViewController: UIViewController {
                         lock.lock(); errors.append(error.localizedDescription); lock.unlock()
                     }
                 }
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) ||
+            }
+            if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) ||
                         provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                 let type = provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) ? UTType.movie : UTType.image
                 taskGroup.enter()
@@ -78,7 +79,8 @@ final class ShareViewController: UIViewController {
                         lock.lock(); errors.append(error.localizedDescription); lock.unlock()
                     }
                 }
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
+            }
+            if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                 taskGroup.enter()
                 provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, _ in
                     defer { taskGroup.leave() }
