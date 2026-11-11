@@ -490,7 +490,7 @@ struct ShareImportView: View {
                 }
                 if !shareErrors.isEmpty {
                     Section("Nieprzekazane załączniki") {
-                        ForEach(shareErrors, id: \.self) { error in
+                        ForEach(Array(shareErrors.enumerated()), id: \.offset) { _, error in
                             Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                         }
                     }
