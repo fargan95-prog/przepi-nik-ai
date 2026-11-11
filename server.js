@@ -35,8 +35,6 @@ const server=createServer(async(req,res)=>{
   if(url.pathname!=="/api/recipe-parse"||req.method!=="POST")return send(res,404,{error:"Nie znaleziono endpointu."},corsOrigin);
   if(corsOrigin==="null")return send(res,403,{error:"Niedozwolone źródło żądania."},corsOrigin);
   if(!process.env.OPENAI_API_KEY)return send(res,500,{error:"Brak OPENAI_API_KEY w sekretach backendu."},corsOrigin);
-  if(!process.env.APP_ACCESS_TOKEN)return send(res,500,{error:"Brak APP_ACCESS_TOKEN w sekretach backendu."},corsOrigin);
-  if(req.headers["x-app-token"]!==process.env.APP_ACCESS_TOKEN)return send(res,401,{error:"Nieprawidłowe hasło dostępu do agenta."},corsOrigin);
   try{
     let raw="";for await(const chunk of req){raw+=chunk;if(raw.length>34_000_000)return send(res,413,{error:"Materiał jest zbyt duży. Zmniejsz zdjęcia."},corsOrigin);}
     const body=JSON.parse(raw||"{}");
