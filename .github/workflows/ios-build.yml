@@ -9,13 +9,16 @@ on:
       - ".github/workflows/ios-build.yml"
   workflow_dispatch:
 
+# Każde uruchomienie ma własną grupę — nowe commity nie anulują ani nie
+# zastępują oczekujących kompilacji.
 concurrency:
-  group: ios-build-${{ github.ref }}
+  group: ios-build-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:
   source-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Set up Swift parser
@@ -33,6 +36,7 @@ jobs:
   ios-build:
     needs: source-check
     runs-on: macos-14
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: Parse Swift sources
