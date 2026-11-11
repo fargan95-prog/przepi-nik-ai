@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import UIKit
 
 struct RecipeHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -449,6 +450,20 @@ struct ShareImportView: View {
         }
     }
 
+    private func extractVideoFrames(from videoURL: URL) -> [Data] {
+        let asset = AVURLAsset(url: videoURL)
+        let duration = asset.duration.seconds
+        guard duration.isFinite, duration > 0 else { return [] }
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: 1280, height: 1280)
+        return [0.12, 0.35, 0.58, 0.82].compactMap { fraction in
+            let time = CMTime(seconds: duration * fraction, preferredTimescale: 600)
+            guard let image = try? generator.copyCGImage(at: time, actualTime: nil) else { return nil }
+            return UIImage(cgImage: image).jpegData(compressionQuality: 0.78)
+        }
+    }
+
     private func extractAudio(from videoURL: URL) async throws -> URL {
         let asset = AVURLAsset(url: videoURL)
         guard !asset.tracks(withMediaType: .audio).isEmpty,
@@ -507,6 +522,15 @@ struct ShareImportView: View {
                 }
                 body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"files\"; filename=\"\(uploadName)\"\r\nContent-Type: \(mime)\r\n\r\n".utf8))
                 body.append(uploadData); body.append(Data("\r\n".utf8))
+                if file.pathExtension.lowercased() == "mp4" || file.pathExtension.lowercased() == "mov" {
+                    let frames = extractVideoFrames(from: file)
+                    for (frameIndex, frame) in frames.enumerated() {
+                        let frameName = "reel-frame-\(frameIndex + 1).jpg"
+                        body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\\"files\\"; filename=\\"\(frameName)\\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8))
+                        body.append(frame)
+                        body.append(Data("\r\n".utf8))
+                    }
+                }
             }
         }
         body.append(Data("--\(boundary)--\r\n".utf8)); request.httpBody = body
