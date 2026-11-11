@@ -557,6 +557,15 @@ struct ShareImportView: View {
         }
     }
 
+    private func clearShareInbox() {
+        guard let inbox = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)?
+            .appendingPathComponent("ShareInbox", isDirectory: true) else { return }
+        let files = (try? FileManager.default.contentsOfDirectory(at: inbox, includingPropertiesForKeys: nil)) ?? []
+        for file in files where file.lastPathComponent == "latest-share.json" || file.lastPathComponent.hasPrefix("shared-") {
+            try? FileManager.default.removeItem(at: file)
+        }
+    }
+
     private func extractVideoFrames(from videoURL: URL) -> [Data] {
         let asset = AVURLAsset(url: videoURL)
         let duration = asset.duration.seconds
