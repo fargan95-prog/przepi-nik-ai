@@ -380,13 +380,32 @@ struct RecipeEditorView: View {
                         set: { recipe.cookMinutes = Int($0) }
                     )).keyboardType(.numberPad)
                 }
+                Section("Weryfikacja") {
+                    Toggle("Wymaga sprawdzenia", isOn: $recipe.needsReview)
+                    if recipe.needsReview {
+                        Text("Zaznacz, jeśli składniki, ilości lub kroki wymagają jeszcze potwierdzenia.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        Text("Oznaczono jako sprawdzony przepis.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
             }
             .navigationTitle("Edytuj przepis")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Anuluj") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Zapisz") { onSave(recipe); dismiss() }
+                    Button("Zapisz") {
+                        var cleaned = recipe
+                        cleaned.name = cleaned.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                        cleaned.ingredients.removeAll { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                        cleaned.steps = cleaned.steps.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+                        cleaned.tags = cleaned.tags.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+                        if !cleaned.needsReview { cleaned.uncertainties = [] }
+                        onSave(cleaned)
+                        dismiss()
+                    }
                         .disabled(recipe.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
