@@ -241,11 +241,11 @@ struct RecipeDetailView: View {
     private var shareText: String {
         var lines = [recipe.name, recipe.description, "Składniki:"]
         lines += recipe.ingredients.map { ingredient in
-            "- \(ingredient.name): \([ingredient.amount, ingredient.unit].compactMap { $0 }.joined(separator: " "))"
+            "- \(ingredient.name): \([scaledAmount(ingredient.amount), ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "))"
         }
         lines.append("Przygotowanie:")
         lines += recipe.steps.enumerated().map { "\($0.offset + 1). \($0.element)" }
-        if let servings = recipe.servings { lines.append("Porcje: \(servings)") }
+        if recipe.servings != nil { lines.append("Porcje: \(displayServings)") }
         if let prep = recipe.prepMinutes { lines.append("Przygotowanie: \(prep) min") }
         if let cook = recipe.cookMinutes { lines.append("Gotowanie: \(cook) min") }
         if let source = recipe.sourceURL { lines.append("Źródło: \(source)") }
@@ -296,7 +296,7 @@ struct RecipeDetailView: View {
                 ForEach(recipe.ingredients) { ingredient in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(ingredient.name).font(.body)
-                        Text([ingredient.amount ?? "Ilość niepodana", ingredient.unit ?? "", ingredient.note]
+                        Text([scaledAmount(ingredient.amount), ingredient.unit ?? "", ingredient.note]
                             .filter { !$0.isEmpty }.joined(separator: " · "))
                             .font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical, 2)
