@@ -644,10 +644,20 @@ struct ShareImportView: View {
         let nonURLText = items.filter { $0 != sourceURL && !$0.hasPrefix("shared-") }
         field("text", (nonURLText.joined(separator: "\n") + "\n" + note).trimmingCharacters(in: .whitespacesAndNewlines))
         if let sourceURL { field("sourceURL", sourceURL) }
+        var uploadedFileCount = 0
+        var uploadedByteCount = 0
         if let inbox = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)?.appendingPathComponent("ShareInbox") {
             let files = (try? FileManager.default.contentsOfDirectory(at: inbox, includingPropertiesForKeys: nil)) ?? []
             for file in files where file.lastPathComponent.hasPrefix("shared-") {
-                guard let data = try? Data(contentsOf: file), data.count <= 24 * 1024 * 1024 else { continue }
+                guard let data = try? Data(contentsOf: file) else { continue }
+                guard data.count <= 12 * 1024 * 1024 else {
+                    errorMessage = "Pominięto załącznik większy niż 12 MB: \(file.lastPathComponent)"
+                    continue
+                }
+                guard uploadedFileCount < 9, uploadedByteCount + data.count <= 32 * 1024 * 1024 else {
+                    errorMessage = "Przekroczono limit załączników. Udostępnij mniej plików lub krótszy film."
+                    continue
+                }
                 var uploadData = data
                 var uploadName = file.lastPathComponent
                 var mime = file.pathExtension.lowercased() == "jpg" || file.pathExtension.lowercased() == "jpeg" ? "image/jpeg" :
@@ -670,13 +680,18 @@ struct ShareImportView: View {
                 }
                 body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"files\"; filename=\"\(uploadName)\"\r\nContent-Type: \(mime)\r\n\r\n".utf8))
                 body.append(uploadData); body.append(Data("\r\n".utf8))
+                uploadedFileCount += 1
+                uploadedByteCount += uploadData.count
                 if file.pathExtension.lowercased() == "mp4" || file.pathExtension.lowercased() == "mov" {
                     let frames = extractVideoFrames(from: file)
                     for (frameIndex, frame) in frames.enumerated() {
+                        guard uploadedFileCount < 9, uploadedByteCount + frame.count <= 32 * 1024 * 1024 else { break }
                         let frameName = "reel-frame-\(frameIndex + 1).jpg"
                         body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"files\"; filename=\"\(frameName)\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8))
                         body.append(frame)
                         body.append(Data("\r\n".utf8))
+                        uploadedFileCount += 1
+                        uploadedByteCount += frame.count
                     }
                 }
             }
