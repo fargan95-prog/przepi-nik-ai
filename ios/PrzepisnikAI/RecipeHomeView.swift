@@ -116,7 +116,7 @@ struct RecipeHomeView: View {
                     HStack {
                         Text("Moja biblioteka")
                         Spacer()
-                        Text("\(filteredRecipes.count) przepisów").textCase(nil)
+                        Text(recipeCountLabel(filteredRecipes.count)).textCase(nil)
                     }
                 }
             }
@@ -160,6 +160,14 @@ struct RecipeHomeView: View {
                 }
             }
         }
+    }
+
+    private func recipeCountLabel(_ count: Int) -> String {
+        let mod100 = count % 100
+        let mod10 = count % 10
+        let noun = count == 1 ? "przepis" :
+            (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14) ? "przepisy" : "przepisów")
+        return "\(count) \(noun)"
     }
 
     private func loadShare() {
@@ -379,6 +387,7 @@ struct RecipeEditorView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Anuluj") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Zapisz") { onSave(recipe); dismiss() }
+                        .disabled(recipe.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
