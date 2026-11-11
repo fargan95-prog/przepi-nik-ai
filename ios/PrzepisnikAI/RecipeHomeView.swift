@@ -283,7 +283,7 @@ struct RecipeDetailView: View {
             Section {
                 Text(recipe.description).foregroundStyle(.secondary)
                 LabeledContent("Kategoria", value: recipe.category)
-                if let servings = recipe.servings { LabeledContent("Porcje", value: String(servings)) }
+                if recipe.servings != nil { LabeledContent("Porcje", value: String(displayServings)) }
                 if let prep = recipe.prepMinutes { LabeledContent("Przygotowanie", value: "\(prep) min") }
                 if let cook = recipe.cookMinutes { LabeledContent("Gotowanie", value: "\(cook) min") }
             }
