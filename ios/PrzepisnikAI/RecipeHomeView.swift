@@ -193,12 +193,12 @@ struct RecipeDetailView: View {
     @State private var recipe: RecipeImportResponse
     @State private var showEditor = false
     let onSave: (RecipeImportResponse, String) -> Void
-    private let originalID: String
+    @State private var originalID: String
     private let green = Color(red: 0.19, green: 0.29, blue: 0.23)
 
     init(recipe: RecipeImportResponse, onSave: @escaping (RecipeImportResponse, String) -> Void) {
         _recipe = State(initialValue: recipe)
-        self.originalID = recipe.id
+        _originalID = State(initialValue: recipe.id)
         self.onSave = onSave
     }
 
@@ -274,6 +274,7 @@ struct RecipeDetailView: View {
             RecipeEditorView(recipe: recipe) { updated in
                 recipe = updated
                 onSave(updated, originalID)
+                originalID = updated.id
             }
         }
     }
