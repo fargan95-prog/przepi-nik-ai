@@ -515,6 +515,11 @@ struct ShareImportView: View {
                     file.pathExtension.lowercased() == "webp" ? "image/webp" :
                     file.pathExtension.lowercased() == "mp4" ? "video/mp4" :
                     file.pathExtension.lowercased() == "mov" ? "video/quicktime" : "application/octet-stream"
+                if mime == "image/heic", let image = UIImage(data: data), let jpeg = image.jpegData(compressionQuality: 0.9) {
+                    uploadData = jpeg
+                    uploadName = file.deletingPathExtension().lastPathComponent + ".jpg"
+                    mime = "image/jpeg"
+                }
                 if mime.hasPrefix("video/"), let audioURL = try? await extractAudio(from: file),
                    let audioData = try? Data(contentsOf: audioURL) {
                     uploadData = audioData
